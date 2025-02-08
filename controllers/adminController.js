@@ -1,5 +1,5 @@
 const Admin = require("../models/adminModel");
-const {Role} = require("../models/roleModel");
+const Role  = require("../models/roleModel");
 const { uploadFileToFirebase , bucket} = require('../utils/fireBase');
 
 // const { uploadFileToFirebase , bucket} = require('../utils/fireBase');
@@ -24,11 +24,11 @@ function generateOtp() {
         ["Dashboard Management",
         "Employee Management",
         "Course Management",
-        "class_management",
-        "student_management",
-        "messages",
-        "system_management",
-        "all_management"]
+        "Class Management",
+        "Student Management",
+        "Messages",
+        "System Management",
+        "All Management"]
       
     const hashedPassword = await bcryptjs.hash(password, 10);
   
@@ -47,11 +47,11 @@ function generateOtp() {
             "Dashboard Management",
             "Employee Management",
             "Course Management",
-            "class_management",
-            "student_management",
-            "messages",
-            "system_management",
-            "all_management",
+            "Class Management",
+            "Student Management",
+            "Messages",
+            "System Management",
+            "All Management",
           ],
         });
         await adminRole.save();
@@ -65,11 +65,11 @@ function generateOtp() {
         roles ,
         password: hashedPassword,
         permissions
-      });
+      })
   
       console.log("newadmin",newadmin)
       await newadmin.save();
-      return res.status(200).json({ message: "Admin created successfully!", newadmin });
+      return res.status(200).json({ message: "Admin Created Successfully!", newadmin });
     } catch (error) {
       console.error("Error creating Admin:", error.message);
       return res.status(500).json({ message: `Internal server error: ${error.message}` });
@@ -131,7 +131,7 @@ const loginAdmin = async (req, res) => {
 const getAllAdmins = async (req, res) => {
   try {
     const admins = await Admin.find().populate("roles");
-    return res.status(200).json({ message: "Admins fetched successfully!", admins });
+    return res.status(200).json({ message: "Admins Fetched Successfully!", admins });
   } catch (error) {
     console.error("Error fetching admins:", error.message);
     return res.status(500).json({ message: `Internal server error: ${error.message}` });

@@ -1,41 +1,6 @@
 const mongoose = require("mongoose");
 const moment = require("moment");
-const { permission } = require("process");
-
-// Sequence Schema
-const sequenceSchema = new mongoose.Schema({
-  seqName: { type: String, required: true, unique: true },
-  seqValue: { type: Number, default: 0 },
-});
-
-const Sequence = mongoose.model("Sequence", sequenceSchema);
-
-// Function to get the next sequence value for roleId
-async function getNextSequenceValue(type) {
-  const prefixMap = {
-    Admin: "ADM",
-    Employee: "EMP",
-    Instructor: "INST",
-    Students: "SDTS",
-    HR: "HR",
-    Manager: "MNG",
-  };
-
-  const prefix = prefixMap[type] || "USR";
-
-  try {
-    const sequenceDoc = await Sequence.findOneAndUpdate(
-      { seqName: type },
-      { $inc: { seqValue: 1 } },
-      { new: true, upsert: true }
-    );
-
-    const sequenceNumber = sequenceDoc.seqValue.toString().padStart(4, "0");
-    return `${prefix}-${sequenceNumber}`;
-  } catch (error) {
-    throw new Error("Error generating sequence value: " + error.message);
-  }
-}
+ 
 
 // Role Schema
 const roleSchema = new mongoose.Schema({
@@ -43,7 +8,7 @@ const roleSchema = new mongoose.Schema({
   roles: { type: String  }, // Use 'roles' field for role name
   status: { type: String, default: "Active" },
   permission :[String],
-  // name : { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+  name: { type: mongoose.Schema.Types.ObjectId, ref: "User" ,default :null},
   createdAt: {
     type: String,
     default: () => moment().format("DD-MM-YYYY HH:mm"),
@@ -54,21 +19,27 @@ const roleSchema = new mongoose.Schema({
   },
 });
 
-// Pre-save hook to generate roleId and update timestamps
-roleSchema.pre("save", async function (next) {
-  try {
-    if (!this.roleId && this.roles) {
-      this.roleId = await getNextSequenceValue(this.roles); // Use 'roles' to generate ID
-    } else if (!this.roles) {
-      return next(new Error("Roles is required to generate roleId"));
-    }
+  // Middleware to update `updatedAt` field before each save
+  roleSchema.pre("save", function (next) {
     this.updatedAt = moment().format("DD-MM-YYYY HH:mm");
     next();
-  } catch (error) {
-    next(error);
-  }
-});
+  });
+  
+  // Middleware to update `updatedAt` field before each update
+  roleSchema.pre("findOneAndUpdate", function (next) {
+    this.set({ updatedAt: moment().format("DD-MM-YYYY HH:mm") });
+    next();
+  });
+  
+  // Middleware to update `updatedAt` field before each updateMany
+  roleSchema.pre("updateMany", function (next) {
+    this.set({ updatedAt: moment().format("DD-MM-YYYY HH:mm") });
+    next();
+  });
+
+  
+ 
 
 const Role = mongoose.model("Role", roleSchema);
 
-module.exports = { Role, Sequence };
+module.exports = Role 

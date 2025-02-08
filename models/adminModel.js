@@ -23,6 +23,25 @@ const adminSchema = new mongoose.Schema({
   },
 });
 
+
+  // Middleware to update `updatedAt` field before each save
+  adminSchema.pre("save", function (next) {
+    this.updatedAt = moment().format("DD-MM-YYYY HH:mm");
+    next();
+  });
+  
+  // Middleware to update `updatedAt` field before each update
+  adminSchema.pre("findOneAndUpdate", function (next) {
+    this.set({ updatedAt: moment().format("DD-MM-YYYY HH:mm") });
+    next();
+  });
+  
+  // Middleware to update `updatedAt` field before each updateMany
+  adminSchema.pre("updateMany", function (next) {
+    this.set({ updatedAt: moment().format("DD-MM-YYYY HH:mm") });
+    next();
+  });
+  
 const Admin = mongoose.model("Admin", adminSchema);
 
 module.exports = Admin;

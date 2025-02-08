@@ -1,57 +1,111 @@
-const { Role } = require('../models/roleModel');
+const Role  = require('../models/roleModel');
+const mongoose = require("mongoose");
 
  
-
-// Create a new role
 const createRole = async (req, res) => {
   try {
-    const { roles, permission , status  , name } = req.body;
+    const { roles, permission, name } = req.body; // 'name' represents employee ID
 
+    // Condition 1: If role is not selected, return an error
     if (!roles) {
-      return res.status(400).json({ message: "Roles are required to create a role." });
+      return res.status(400).json({ message: 'Please select a role.' });
     }
 
-    const newRole = new Role({
+    // Condition 2: If name is provided but not a valid ObjectId, return an error
+    if (name && !mongoose.Types.ObjectId.isValid(name)) {
+      return res.status(400).json({ message: 'Invalid Employee ID format.' });
+    }
+
+    // Condition 3: Check if the exact same role with the same employee ID exists
+    let existingRoleWithId = await Role.findOne({ roles, name });
+    if (existingRoleWithId) {
+      return res.status(400).json({
+        message: `Role already exists!`,
+        role: existingRoleWithId,
+      });
+    }
+
+    // Condition 4: If role exists but with a different employee, allow creation
+    // This ensures that the same role can be assigned to different employees
+    let existingRole = await Role.findOne({ roles, name: { $ne: name } });
+    
+    if (existingRole) {
+      const newRole = new Role({
         roles,
+        permission,
+        name,
+      });
+      const savedRole = await newRole.save();
+      return res.status(201).json({
+        message: `Role '${roles}' assigned to employee successfully!`,
+        role: savedRole,
+      });
+    }
+
+    // Condition 5: If employee exists but with a different role, allow creation
+    let existingEmployee = await Role.findOne({ name, roles: { $ne: roles } });
+    
+    if (existingEmployee) {
+      const newRole = new Role({
+        roles,
+        permission,
+        name,
+      });
+      const savedRole = await newRole.save();
+      return res.status(200).json({
+        message: `Role created successfully${name ? " with employee name!" : "!"}`,
+        role: savedRole,
+      });
+    }
+
+    // Condition 6: If role & name are unique, save new role
+    const newRole = new Role({
+      roles,
       permission,
-      status , 
-      name
-      
+      name,
     });
 
     const savedRole = await newRole.save();
-     
-    res.status(200).json({ message: `${roles} Created Successfully!`, role: savedRole });
+    return res.status(200).json({ message: `'${roles}' created successfully!`, role: savedRole });
+
   } catch (error) {
-    console.error("Error creating role:", error.message);
+    console.error('Error creating role:', error.message);
     res.status(500).json({ message: `Internal server error: ${error.message}` });
   }
 };
 
 
+
+
+// ================================================================================================
+// ================================================================================================
 // Get all roles
 const getAllRoles = async (req, res) => {
   try {
-    const { page = 1, limit = 10} = req.query;
+    const { page , limit  } = req.query; // Set default values
 
-    const skip = (parseInt(page) - 1) * parseInt(limit);
-    const [roles, totalRoles] = await Promise.all([
-      Role.find()
-      // .populate("name")
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(parseInt(limit)),
-      Role.countDocuments(),
-    ]);
+    const skip = (page - 1) * limit;
+
+    // Fetch roles excluding 'Admin'
+    const roles = await Role.find({ roles: { $ne: "Admin" } })
+    .populate('name')  
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit));
+
+    // Count total roles excluding 'Admin'
+    const total = await Role.countDocuments({ roles: { $ne: "Admin" } });
+
+    const totalPages = Math.ceil(total / limit);
 
     res.status(200).json({
       message: "Roles Fetched Successfully!",
       roles,
       pagination: {
-        total: totalRoles,
+        total,
         currentPage: parseInt(page),
         perPage: parseInt(limit),
-        totalPages: Math.ceil(totalRoles / parseInt(limit)),
+        totalPages,
       },
     });
   } catch (error) {
@@ -61,13 +115,16 @@ const getAllRoles = async (req, res) => {
 };
 
 
+
+// ================================================================================================
+// ================================================================================================
 // Get a single role by ID
 const getRoleById = async (req, res) => {
   try {
     const { _id } = req.query;
 
     const role = await Role.findById(_id)
-    // .populate("name");
+    .populate("name");
     if (!role) {
       return res.status(404).json({ message: "Role not found" });
     }
@@ -80,6 +137,8 @@ const getRoleById = async (req, res) => {
 };
 
 
+// ================================================================================================
+// ================================================================================================
 // Update a role
 const updateRole = async (req, res) => {
     try {

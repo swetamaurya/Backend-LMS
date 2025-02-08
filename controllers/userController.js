@@ -1,5 +1,5 @@
-const User = require("../models/userModel");
-const { Role } = require("../models/roleModel");
+const {User} = require("../models/userModel");
+const Role   = require("../models/roleModel");
 
 const { uploadFileToFirebase , bucket} = require('../utils/fireBase');
 
@@ -102,6 +102,8 @@ console.log(otp)
   }
 }
 
+// ================================================================================================
+// ================================================================================================
 // verify otp
 const verifyOtp = async (req, res) => {
 const { email, currentOtp } = req.body;
@@ -131,6 +133,8 @@ res.status(500).json({ message: 'Internal server error' });
 }
 }
 
+// ================================================================================================
+// ================================================================================================
 // change password inter new password
 const resetPassword = async (req, res) => {
   const { email, currentOtp, newPassword } = req.body;
@@ -164,235 +168,96 @@ const resetPassword = async (req, res) => {
 //////////////////////////////////////////////////////////// create new user ////////////////////////////////////////////////////////////////////
 
 
+// ================================================================================================
+// ================================================================================================
 const userPost = async (req, res) => {
   try {
-    const { email, password, roles } = req.body;
-
-    // Validate required fields
-    if (!email || !password || !roles ) {
-      return res.status(400).json({ message: "All fields are required to create a user." });
+    const { email, password, roles ,...userData} = req.body;
+    if (!email || !password || !roles) {
+      return res.status(400).json({ message: 'All fields are required to create a user.' });
     }
-
-    // console.log("Request Body:", req.body);
-    // console.log("Uploaded Files:", req.files);
-
-    let fileUrls = [];
-    let imgUrl = "";
-
-    // Handle files array
-    if (req.files && req.files.files) {
-      fileUrls = await uploadFileToFirebase(req.files.files);
+    // Check if the role exists
+    const role = await Role.findById(roles);
+    if (!role) {
+      return res.status(404).json({ message: 'Specified role does not exist.' });
     }
-
-    // Handle single image file
-    if (req.files && req.files.image) {
-      const uploadedImages = await uploadFileToFirebase(req.files.image);
-      imgUrl = uploadedImages[0]; // Since it's a single image, use the first URL
-    }
-
     // Check if the user already exists
-    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(409).json({ message: "Email already exists!" });
+      return res.status(409).json({ message: 'User already exists.' });
     }
-
+    let filesUrls = []
+    let imageUrl = "";
+    // Handle multiple file uploads for materials
+    if (req.files?.files) {
+      filesUrls = await uploadFileToFirebase(req.files.files);
+      userData.files = filesUrls; // Add file URLs to course data
+    }
+    // Handle single file upload for thumbnail
+    if (req.files?.image) {
+      const uploadedimage = await uploadFileToFirebase(req.files.image);
+      imageUrl = uploadedimage[0];
+      userData.image = imageUrl;
+    }
     // Hash the password
     const hashedPassword = await bcryptjs.hash(password, 10);
-
     // Create a new user
     const newUser = new User({
-      ...req.body,
+      ...userData,
       email: email.toLowerCase(),
       password: hashedPassword,
-      roles,
-      image: imgUrl, // Store the image URL
-      files: fileUrls, // Store file URLs
-     
+      roles: role._id, // Reference the existing role by its ID
     });
-
-    await newUser.save();
-
-    return res.status(200).json({
-      message: "User created successfully!",
-      newUser,
+    const savedUser = await newUser.save();
+    res.status(200).json({
+      message: 'User Created Successfully!',
+      user: savedUser,
     });
   } catch (error) {
-    console.error("Error creating user:", error.message);
-    return res.status(500).json({ message: `Internal server error: ${error.message}` });
+    console.error('Error creating user:', error.message);
+    res.status(500).json({ message: `Internal server error: ${error.message}` });
   }
 };
 
 
 
-//////////////////////////////////////////////////////////// get all user ////////////////////////////////////////////////////////////////////
-
-  
-// const getAllUser = async (req, res) => {
-//   try {
-//     const { roles, _id } = req.user; // Authenticated user details
-//     const { page, limit } = req.query; // Pagination parameters from frontend
-
-//     // console.log(req.user);
-
-//     let query = {};
-
-//     // Define query based on the role
-//     if (roles === 'Admin') {
-//       query = {}; // Admin can view all users
-//     } else if (['Students', 'HR', 'Instructor', 'Manager'].includes(roles)) {
-//       query = { _id }; // Restrict non-admin roles to their own data
-//     } else {
-//       return res
-//         .status(403)
-//         .json({ message: 'Access denied: Insufficient permissions.' });
-//     }
-
-//     // Get role ObjectIds
-//     const roleIds = await Role.find({
-//       roles: { $in: ['Manager', 'Students', 'HR', 'Instructor'] },
-//     })
-//       .lean()
-//       .select('roles _id');
-
-//       console.log(roleIds)
-
-//     const roleMap = roleIds.reduce((acc, role) => {
-//       acc[role.roles] = role._id;
-//       return acc;
-//     }, {});
-
-//     // console.log(roleMap)
-//     // Pagination logic
-//     const parsedPage = page ? Math.max(1, parseInt(page)) : null;
-//     const parsedLimit = limit ? Math.max(1, parseInt(limit)) : null;
-//     const skip = parsedPage && parsedLimit ? (parsedPage - 1) * parsedLimit : 0;
-
-
-//     // Define role queries
-//     const managerQuery = { ...query, roles: roleMap['Manager'] };
-//     const studentQuery = { ...query, roles: roleMap['Students'] };
-//     const hrQuery = { ...query, roles: roleMap['HR'] };
-//     const instructorQuery = { ...query, roles: roleMap['Instructor'] };
-
-//  console.log({ managerQuery, studentQuery, hrQuery, instructorQuery });
- 
-
-// const [managers, students, hr, instructors] = await Promise.all([
-//       User.find(managerQuery)
-//         .populate('roles')
-//         .sort({ _id: -1 })
-//         .skip(skip)
-//         .limit(parsedLimit)
-//         .lean(),
-//       User.find(studentQuery)
-//         .populate('roles')
-//         .sort({ _id: -1 })
-//         .skip(skip)
-//         .limit(parsedLimit)
-//         .lean(),
-//       User.find(hrQuery)
-//         .populate('roles')
-//         .sort({ _id: -1 })
-//         .skip(skip)
-//         .limit(parsedLimit)
-//         .lean(),
-//       User.find(instructorQuery)
-//         .populate('roles')
-//         .sort({ _id: -1 })
-//         .skip(skip)
-//         .limit(parsedLimit)
-//         .lean(),
-//     ]);
-
-//     // Count totals for each role
-//     const [totalManagers, totalStudents, totalHR, totalInstructors] =
-//       await Promise.all([
-//         User.countDocuments(managerQuery),
-//         User.countDocuments(studentQuery),
-//         User.countDocuments(hrQuery),
-//         User.countDocuments(instructorQuery),
-//       ]);
-
-
-//     // Response
-//     return res.status(200).json({
-//       data: {
-//         managers: {
-//           total: totalManagers,
-//           data: managers,
-//         },
-//         students: {
-//           total: totalStudents,
-//           data: students,
-//         },
-//         hr: {
-//           total: totalHR,
-//           data: hr,
-//         },
-//         instructors: {
-//           total: totalInstructors,
-//           data: instructors,
-//         },
-//       },
-//       pagination: {
-//         totalUsers: totalManagers + totalStudents + totalHR + totalInstructors,
-//         currentPage: parsedPage || '',
-//         pageSize: parsedLimit || '',
-//       },
-//     });
-//   } catch (error) {
-//     console.error('Error fetching users:', error);
-//     return res.status(500).json({ message: `Internal server error: ${error.message}` });
-//   }
-// };
 const getAllUser = async (req, res) => {
   try {
-    const { roles, _id } = req.user; // Authenticated user details
-    const { page = 1, limit=10 } = req.query; // Pagination parameters
+    const { roles, _id } = req.user;
+    const { page  , limit  } = req.query;
 
-    let query = {};
+    // Fetch the ObjectId of the "Student" role
+    const studentRole = await Role.findOne({ roles: "Students" }).lean();
+    if (!studentRole) {
+      return res.status(404).json({ message: "Students role not found" });
+    }
 
-    // Define query based on role
-    if (roles === 'Admin') {
-      query = {}; // Admin can view all users
-    } else if (['Students', 'HR', 'Instructor', 'Manager'].includes(roles)) {
-      query = { _id }; // Restrict non-admin roles to their own data
+    let query = { roles: { $ne: studentRole._id } }; // Exclude students
+
+    if (roles === "Admin") {
+      query = { roles: { $ne: studentRole._id } }; // Admin can see all except students
+    } else if (["HR", "Instructor", "Manager"].includes(roles)) {
+      query = { _id, roles: { $ne: studentRole._id } }; // Restrict to self but exclude students
     } else {
       return res
         .status(403)
-        .json({ message: 'Access denied: Insufficient permissions.' });
+        .json({ message: "Access denied: Insufficient permissions." });
     }
 
-    // Check if pagination parameters are provided
-    const skip = (parseInt(page) - 1) * parseInt(limit || 0); // Records to skip
-    // Fetch data with or without pagination
-    let users;
- 
- if(limit){
-      users = await User.find(query)
-        .populate('roles')
-        .sort({ _id: -1 })
-        .skip(skip)
-          .limit(parseInt(limit))
-          .sort({ _id: -1 })
-          .lean();
-      // totalUsers = await User.countDocuments(query);
-    } else {
-      users = await User.find(query).populate('roles')
+    const skip = (parseInt(page) - 1) * parseInt(limit || 0);
+
+    const users = await User.find(query)
+      .populate("roles")
+      .sort({ _id: -1 })
       .skip(skip)
       .limit(parseInt(limit))
-      .sort({ _id: -1 })
       .lean();
-      // totalUsers = users.length; // Total count is the array length when no pagination
-    }
 
     const totalUsers = await User.countDocuments(query);
     const totalPages = limit ? Math.ceil(totalUsers / parseInt(limit)) : 1;
 
-    // Response
     return res.status(200).json({
-      message: 'User fetched successfully!',
-
+      message: "Users fetched successfully!",
       data: users,
       totalUsers,
       pagination: {
@@ -400,9 +265,10 @@ const getAllUser = async (req, res) => {
         totalPages,
         currentPage: parseInt(page),
         perPage: limit ? parseInt(limit) : totalUsers,
-      },    });
+      },
+    });
   } catch (error) {
-    console.error('Error fetching users:', error);
+    console.error("Error fetching users:", error);
     return res.status(500).json({ message: `Internal server error: ${error.message}` });
   }
 };
@@ -500,8 +366,9 @@ const updatedUser = async (req, res) => {
 
 
 
+
  
 module.exports = {
     login , resetPassword , verifyOtp, sendOtpEmail ,userPost 
-    ,getAllUser, getUser , updatedUser  
+    ,getAllUser, getUser , updatedUser   
 }

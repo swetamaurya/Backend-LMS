@@ -19,53 +19,7 @@ admin.initializeApp({
 
 const bucket = admin.storage().bucket();
 
-// Function to upload file to Firebase
-// const uploadFileToFirebase = async (file) => {
-//     const fileUrls = [];
-
-//     // Ensure file is always treated as an array
-//     file = Array.isArray(file) ? file : [file];
-
-//     try {
-//         for (const file of file) {
-//             const docId = Math.floor(Math.random() * 900000000) + 100000000;
-//             const fileType = file.originalname.split('.').pop();
-//             const fileRef = bucket.file(`${docId}.${fileType}`);
-//             const options = {
-//                 metadata: { contentType: file.mimetype },
-//                 resumable: false,
-//             };
-
-//             await new Promise((resolve, reject) => {
-//                 const writable = fileRef.createWriteStream(options);
-
-//                 writable.on('finish', async () => {
-//                     try {
-//                         const [fileUrl] = await fileRef.getSignedUrl({
-//                             action: 'read',
-//                             expires: '03-09-2491',
-//                         });
-//                         fileUrls.push(fileUrl);
-//                         resolve();
-//                     } catch (error) {
-//                         reject(error);
-//                     }
-//                 });
-
-//                 writable.on('error', (error) => {
-//                     reject(error);
-//                 });
-
-//                 writable.end(file.buffer);
-//             });
-//         }
-//         return fileUrls;
-//     } catch (error) {
-//         console.error("Error uploading file to Firebase:", error.message);
-//         throw new Error(`Error uploading file: ${error.message}`);
-//     }
-// };
-
+ 
 const uploadFileToFirebase = async (file) => {
     try {
       // Ensure file is always treated as an array
