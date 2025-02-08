@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const { createCourse, getAllCourses, getCourse, updateCourse } = require("../controllers/courseController");
  const multer = require("multer");
-const { auth } = require("../Middleware/authorization");
+ const {auth} = require("../middleware/authorization")
 const upload = multer({ storage: multer.memoryStorage() });
 
 router.post(

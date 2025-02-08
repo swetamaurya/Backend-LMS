@@ -1,8 +1,7 @@
 
 const express = require("express");
 const router = express.Router();
-const { auth } = require("../Middleware/authorization")
-
+const {auth} = require("../middleware/authorization")
 const {createCourseCategory,getAllCourseCategories,getCourseCategoryById,updateCourseCategory} = require("../controllers/courseCategoryController");
 
 //  Create a new course category
