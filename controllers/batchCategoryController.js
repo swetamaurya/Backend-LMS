@@ -126,7 +126,7 @@ exports.updateBatchCategory = async (req, res) => {
 
     let updatedBatchCategory = null;
 
-    // ✅ Update a single batch if `_id` is provided
+    //   Update a single batch if `_id` is provided
     if (_id) {
       updatedBatchCategory = await BatchCategory.findByIdAndUpdate(
         _id,
@@ -139,7 +139,7 @@ exports.updateBatchCategory = async (req, res) => {
       }
     }
 
-    // ✅ Update multiple batches with student replacement logic
+    //   Update multiple batches with student replacement logic
     let updatedBatches = null;
     if (batchIds && student && student.length > 0) {
       updatedBatches = await Promise.all(
@@ -151,20 +151,20 @@ exports.updateBatchCategory = async (req, res) => {
             const existingIndex = batch.student.findIndex(
               (s) =>
                 s.registrationNumber === newStudent.registrationNumber ||
-                (s.firstName === newStudent.firstName &&
-                  s.lastName === newStudent.lastName)
+                (s.first_name === newStudent.first_name &&
+                  s.last_name === newStudent.last_name)
             );
 
             if (existingIndex !== -1) {
-              // ✅ Replace existing student
+              //   Replace existing student
               batch.student[existingIndex] = newStudent;
             } else {
-              // ✅ Push new student if not found
+              //   Push new student if not found
               batch.student.push(newStudent);
             }
           });
 
-          return batch.save(); // ✅ Save batch after modification
+          return batch.save(); //   Save batch after modification
         })
       );
     }

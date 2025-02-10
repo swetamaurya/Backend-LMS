@@ -44,8 +44,8 @@ async function getNextUserId(role) {
 // User Schema
 const userSchema = new mongoose.Schema({
   userId: { type: String }, // Automatically generated based on role
-  firstName: { type: String },
-  lastName: { type: String },
+  first_name: { type: String },
+  last_name: { type: String },
   phoneNumber: { type: String },
   address: { type: String },
   email: { type: String },

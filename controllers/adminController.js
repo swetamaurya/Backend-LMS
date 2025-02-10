@@ -18,7 +18,7 @@ function generateOtp() {
 // ====================================================================================================================== 
  // Admin Sign-Up
  const signUp = async (req, res) => {
-    const { email, name, mobile, password } = req.body;
+    const { email, name, phone, password } = req.body;
     const roles = "Admin";
   const permissions = 
         ["Dashboard Management",
@@ -61,7 +61,7 @@ function generateOtp() {
       const newadmin = new Admin({
         name,
         email: email.toLowerCase(),
-        mobile,
+        phone,
         roles ,
         password: hashedPassword,
         permissions
@@ -219,7 +219,7 @@ const updateAdmin = async (req, res) => {
     }
 
     return res.status(200).json({
-      message: `${updatedAdmin.firstName} ${updatedAdmin.lastName} Updated Successfully!`,
+      message: `${updatedAdmin.first_name} ${updatedAdmin.last_name} Updated Successfully!`,
       updatedAdmin,
     });
   } catch (error) {

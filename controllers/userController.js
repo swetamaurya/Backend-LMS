@@ -355,7 +355,7 @@ const updatedUser = async (req, res) => {
     }
 
     return res.status(200).json({
-      message: `${updatedUser.firstName} ${updatedUser.lastName} Updated Successfully!`,
+      message: `${updatedUser.first_name} ${updatedUser.last_name} Updated Successfully!`,
       updatedUser,
     });
   } catch (error) {

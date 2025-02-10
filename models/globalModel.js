@@ -98,7 +98,7 @@ const populationConfig = {
   {
       path: 'lead', // Populate lead data only if it exists
       model: 'Lead',
-      select: 'leadName leadId email mobile createdBy',
+      select: 'leadName leadId email phone createdBy',
 
   },{
       path: 'createdBy', // Populate offers data
@@ -114,7 +114,7 @@ const populationConfig = {
       { path: 'enquiry'},
       {path: 'lead', // Populate lead data only if it exists
       model: 'Lead',
-      select: 'leadName leadId email mobile createdBy',
+      select: 'leadName leadId email phone createdBy',
 }
 
   ],

@@ -25,6 +25,7 @@ const batchRouter = require("./routes/batchRoute");
 const exportRouter = require("./routes/exportRoute");
 const studentRouter = require("./routes/studentRoute");
 const batchCategoryRouter = require("./routes/batchCategoryRoute");
+const classRouter = require("./routes/classRoute");
 
 dotenv.config();
 
@@ -49,6 +50,7 @@ app.use("/batch", batchRouter);
 app.use("/batchCategory", batchCategoryRouter);
 app.use("/export", exportRouter);
 app.use("/student", studentRouter);
+app.use("/class",classRouter)
 
 // Test route
 app.get("/test", async (req, res) => {

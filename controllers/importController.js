@@ -251,7 +251,7 @@ const importFromExcel = async (req, res) => {
       "Visit Frequency": "visitFrequency",
       "Roles": "roles",
       "Email": "email",
-      "Mobile": "mobile",
+      "phone": "phone",
       "Status": "status",
       "Product Category":"category",
       "Speciality":"speciality",
