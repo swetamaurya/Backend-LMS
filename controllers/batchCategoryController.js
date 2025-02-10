@@ -150,7 +150,7 @@ exports.updateBatchCategory = async (req, res) => {
           student.forEach((newStudent) => {
             const existingIndex = batch.student.findIndex(
               (s) =>
-                s.registrationNumber === newStudent.registrationNumber ||
+                s.registration_number === newStudent.registration_number ||
                 (s.first_name === newStudent.first_name &&
                   s.last_name === newStudent.last_name)
             );
