@@ -22,10 +22,11 @@ const deleteRouter = require("./routes/deleteRoute");
 const courseRouter = require("./routes/courseRoute");
 const courseCategoryRouter = require("./routes/courseCategoryRoute");
 const batchRouter = require("./routes/batchRoute");
-const exportRouter = require("./routes/exportRoute");
 const studentRouter = require("./routes/studentRoute");
 const batchCategoryRouter = require("./routes/batchCategoryRoute");
 const classRouter = require("./routes/classRoute");
+const importRouter = require("./routes/importRoute");
+const exportRouter = require("./routes/exportRoute");
 
 dotenv.config();
 
@@ -48,9 +49,15 @@ app.use("/course", courseRouter);
 app.use("/courseCategory", courseCategoryRouter);
 app.use("/batch", batchRouter);
 app.use("/batchCategory", batchCategoryRouter);
-app.use("/export", exportRouter);
 app.use("/student", studentRouter);
 app.use("/class",classRouter)
+app.use('/import',importRouter)
+app.use("/export", exportRouter);
+
+ 
+
+
+
 
 // Test route
 app.get("/test", async (req, res) => {

@@ -11,10 +11,10 @@ const SeqStudent = mongoose.model("SeqStudent", sequenceSchema);
 
 // Student Schema
 const studentSchema = new mongoose.Schema({
-  studentId: { type: String, unique: true }, // ID will be set when creating a new student
+  studentId: { type: String  }, // ID will be set when creating a new student
   batchId: { type: mongoose.Schema.Types.ObjectId, ref: "Batch" },
   roles: { type: String, default: "Students" },
-  applicationNumber: { type: String },
+  application_number: { type: String },
   first_name: { type: String },
   last_name: { type: String },
   email: { type: String },
@@ -33,7 +33,7 @@ const studentSchema = new mongoose.Schema({
   high_school_details: { type: String },
   high_school_details_division: { type: String },
   present_street: { type: String },
-  present_houseNo: { type: String },
+  present_house_no: { type: String },
   present_village: { type: String },
   present_city: { type: String },
   present_post_office: { type: String },
@@ -51,10 +51,14 @@ const studentSchema = new mongoose.Schema({
   payment_status: { type: String },
   paymentId: { type: String },
   applicationFee: { type: String },
-  applyFor: { type: String },
+  apply_for: { type: String },
   signature_path: { type: String },
+  examination_fees: { type: String },
+  examination_centre_state: { type: String },
+  examination_centre_city: { type: String },
+  status : { type: String },
   photo_path: { type: String },
-  status: { type: String, default: "Active" },
+  userStatus: { type: String, default: "Active" },
   createdAt: { type: String, default: () => moment().format("DD-MM-YYYY HH:mm") },
   updatedAt: { type: String, default: () => moment().format("DD-MM-YYYY HH:mm") },
 });

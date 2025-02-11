@@ -2,13 +2,15 @@ const mongoose = require("mongoose");
 const moment = require("moment");
 
 const classSchema = new mongoose.Schema({
-  classTitle: { type: String },
-  instructor: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-  batch: { type: mongoose.Schema.Types.ObjectId, ref: "Batch" },
-  courseCategory : { type: mongoose.Schema.Types.ObjectId, ref: "courseCategory" },
-  course : { type: mongoose.Schema.Types.ObjectId, ref: "Course" },
-  description: { type: String },
-  materials: [{ type: String }],
+    classTitle: { type: String },
+    instructor: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    batch: { type: mongoose.Schema.Types.ObjectId, ref: "Batch" },
+    courseCategory : { type: mongoose.Schema.Types.ObjectId, ref: "courseCategory" },
+    course : { type: mongoose.Schema.Types.ObjectId, ref: "Course" },
+    description: { type: String },
+    materials: [{ type: String }],
+    
+    liveClassStatus: { type: String, default: "true" },
   fromDate: { type: String },
   toDate: { type: String },
   status: { type: String, default: "Scheduled" },
