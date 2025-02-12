@@ -38,14 +38,12 @@ const importFromExcel = async (req, res) => {
 
           const key = header.toLowerCase().replace(/\s+/g, "_");
 
-          // ✅ Convert Rich Text to Plain Text
-          userData[key] = typeof cell.value === 'object' && cell.value.richText
+           userData[key] = typeof cell.value === 'object' && cell.value.richText
             ? cell.value.richText.map(rt => rt.text).join(' ') // Extract plain text
             : cell.value;
         });
 
-        // ✅ Manually define the "roles" as "Student"
-        userData["roles"] = "Student";
+         userData["roles"] = "Students";
 
         if (Object.keys(userData).length > 0) {
           userRows.push(userData);

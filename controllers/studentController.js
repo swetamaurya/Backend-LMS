@@ -1,48 +1,123 @@
 const Student = require("../models/studentModel");
 const { uploadFileToFirebase , bucket} = require('../utils/fireBase');
+const bcryptjs = require("bcryptjs")
 const axios = require("axios")
  
 // // ================================================================================================
 // // ================================================================================================
 // Create a course
 exports.createStudent = async (req, res) => {
-    try {
-      // Initialize course data from req.body
-      const studentData = { ...req.body };
-  
+  try {
+      // Extract student data from request body
+      const { email, password, ...otherData } = req.body;
+      if (!email || !password) {
+          return res.status(400).json({ message: "Email and password are required." });
+      }
+
       let signature_pathUrl = "";
       let photo_pathUrl = "";
 
+      // Check if the student already exists
+      const existingUser = await Student.findOne({ email: email.toLowerCase() });
+      if (existingUser) {
+          return res.status(409).json({ message: "Student already exists." });
+      }
 
-      // Handle single file upload for signature_path
+      // Handle file uploads
       if (req.files?.signature_path) {
-        const uploadedsignature_path = await uploadFileToFirebase(req.files.signature_path);
-        signature_pathUrl = uploadedsignature_path[0]; 
-        studentData.signature_path = signature_pathUrl; 
+          const uploadedSignature = await uploadFileToFirebase(req.files.signature_path);
+          signature_pathUrl = uploadedSignature[0] || "";
       }
 
-      // Handle single file upload for photo_path
       if (req.files?.photo_path) {
-        const uploadedThumbnail = await uploadFileToFirebase(req.files.photo_path);
-        photo_pathUrl = uploadedThumbnail[0]; 
-        studentData.photo_path = photo_pathUrl; 
+          const uploadedPhoto = await uploadFileToFirebase(req.files.photo_path);
+          photo_pathUrl = uploadedPhoto[0] || "";
       }
-  
-      // Create a new course with the collected data
-      const student = new Student(studentData);
-      const savedStudent = await student.save();
-  
-      res.status(200).json({
-        message: "Student created successfully",
-        course: savedStudent,
+
+      // Hash the password
+      const hashedPassword = await bcryptjs.hash(password, 10);
+
+      // Create a new student object
+      const student = new Student({
+          email: email.toLowerCase(),
+          password: hashedPassword,
+          signature_path: signature_pathUrl,
+          photo_path: photo_pathUrl,
+          ...otherData, // Spread remaining student data
       });
-    } catch (error) {
+
+      // Save student in database
+      const savedStudent = await student.save();
+
+      res.status(201).json({
+          message: "Student created successfully",
+          student: savedStudent, // Corrected response key
+      });
+
+  } catch (error) {
       console.error("Error creating student:", error);
-      res.status(500).json({ message: "Error creating student", error });
-    }
-  };
+      res.status(500).json({ message: "Error creating student", error: error.message });
+  }
+};
   
   
+exports.loginStudent = async (req, res) => {
+  const { email, password, registration_number } = req.body;
+
+  if ((!email && !registration_number) || !password) {
+      return res.status(400).json({ message: "Please provide email or registration number along with password!" });
+  }
+
+  try {
+      // Find student by email (case-insensitive) or registration number
+      const student = await Student.findOne({
+          $or: [
+              { email: email?.toLowerCase() }, 
+              { registration_number }
+          ]
+      });
+
+      if (!student) {
+          return res.status(400).json({ message: "Invalid login credentials!" });
+      }
+
+      // Check if the password matches
+      const isPasswordMatch = await bcryptjs.compare(password, student.password);
+
+      if (!isPasswordMatch) {
+          return res.status(400).json({ message: "Invalid login credentials!" });
+      }
+
+      // Generate JWT token with essential student data
+      const token = jwt.sign(
+          {
+              _id: student._id,
+              roles: student.roles || "Students", // Default role if missing
+              email: student.email,
+              name: student.first_name + " " + student.last_name, // Combine first & last name
+              image: student.photo_path || "", // Use photo path if available
+          },
+          process.env.SECRET_KEY,
+          { expiresIn: "10h" }
+      );
+
+      return res.status(200).json({
+          message: "Login Successfully!",
+          token,
+          student: {
+              _id: student._id,
+              name: student.first_name + " " + student.last_name,
+              email: student.email,
+              registration_number: student.registration_number,
+              roles: student.roles || "Students",
+              image: student.photo_path || "",
+          },
+      });
+  } catch (err) {
+      console.error("Internal server error:", err.message);
+      return res.status(500).json({ message: "Internal server error", error: err.message });
+  }
+};
 
 
 // // ================================================================================================
