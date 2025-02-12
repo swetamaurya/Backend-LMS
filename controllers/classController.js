@@ -48,7 +48,7 @@ exports.getAllClasses = async (req, res) => {
         .skip(skip)
         .limit(parseInt(limit));
     } else {
-      classes = await Class.find(query).populate("batch instructor courseCategory course").sort({ _id: -1 });
+      classes = await Class.find(query).populate("batch instructor courseCategory course").sort({ _id : -1 });
     }
 
     const totalCount = await Class.countDocuments(query);
