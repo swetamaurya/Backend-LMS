@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { createStudent, getAllStudents, getStudent, updateStudent,studentDataUpdate } = require("../controllers/studentController");
+const { createStudent,loginStudent, getAllStudents, getStudent, updateStudent,studentDataUpdate } = require("../controllers/studentController");
 const { auth } = require("../middleware/authorization");
 // const upload = require("../middleware/upload");
 const multer = require("multer");
@@ -19,6 +19,8 @@ router.post(
 
 router.get("/getAll", auth(["Admin","Instructor"]),getAllStudents);
 router.get("/get", auth(["Admin","Instructor"]), getStudent);
+router.post("/login", auth(["Admin","Instructor"]), loginStudent);
+
 router.post(
     "/update",
     auth(["Admin", "Instructor"]),
@@ -28,6 +30,6 @@ router.post(
     updateStudent
   );
 
-  router.get("/studentDataUpdate", auth(["Admin", "Instructor"]),studentDataUpdate);
+router.get("/studentDataUpdate", auth(["Admin", "Instructor"]),studentDataUpdate);
 
 module.exports = router;

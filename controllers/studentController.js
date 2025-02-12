@@ -2,7 +2,7 @@ const Student = require("../models/studentModel");
 const { uploadFileToFirebase , bucket} = require('../utils/fireBase');
 const bcryptjs = require("bcryptjs")
 const axios = require("axios")
- 
+const jwt = require("jsonwebtoken");
 // // ================================================================================================
 // // ================================================================================================
 // Create a course
@@ -169,18 +169,18 @@ exports.getAllStudents = async (req, res) => {
       res.status(500).json({ message: "Error fetching student", error });
     }
   };
-  
-//Update Student
-exports.updateStudent = async (req, res) => {
-  try {
-    const { _id, ...updateFields } = req.body;
 
-    // Validate course ID
+
+  exports.updateStudent = async (req, res) => {
+  try {
+    const { _id, password, ...updateFields } = req.body;
+
+    // Validate student ID
     if (!_id) {
-      return res.status(400).json({ message: "Course ID is required for updating." });
+      return res.status(400).json({ message: "Student ID is required for updating." });
     }
 
-    // Fetch existing course from the database
+    // Fetch existing student from the database
     const existingStudent = await Student.findById(_id);
     if (!existingStudent) {
       return res.status(404).json({ message: "Student not found" });
@@ -191,37 +191,54 @@ exports.updateStudent = async (req, res) => {
 
     // Handle single image upload for signature image
     if (req.files?.signature_path) {
-      const uploadedsignature_path = await uploadFileToFirebase(req.files.signature_path);
-      signature_pathUrl = uploadedsignature_path[0]; // Replace thumbnail with the new one
+      const uploadedSignaturePath = await uploadFileToFirebase(req.files.signature_path);
+      signature_pathUrl = uploadedSignaturePath[0];
     }
     // Handle single image upload for profile image
     if (req.files?.photo_path) {
-      const uploadedsignature_path = await uploadFileToFirebase(req.files.photo_path);
-      photo_pathUrl = uploadedsignature_path[0]; // Replace thumbnail with the new one
+      const uploadedPhotoPath = await uploadFileToFirebase(req.files.photo_path);
+      photo_pathUrl = uploadedPhotoPath[0];
     }
 
     // Add updated file URLs to update fields
     updateFields.signature_path = signature_pathUrl;
     updateFields.photo_path = photo_pathUrl;
 
-    // Update the course in the database
+    // Handle password update
+    if (password) {
+      const hashedPassword = await bcryptjs.hash(password, 10);
+      updateFields.password = hashedPassword;
+    } else if (!existingStudent.password) {
+      // Generate and hash a new password if no password exists
+      let newPassword ;
+      const hashedNewPassword = await bcryptjs.hash(newPassword, 10);
+      updateFields.password = hashedNewPassword;
+
+      // Optionally, log or send the new password
+      console.log(`New generated password for ${existingStudent.email}: ${newPassword}`);
+    }
+
+    // Update the student in the database
     const updatedStudent = await Student.findByIdAndUpdate(_id, updateFields, {
-      new: true, // Return the updated document
+      new: true,
     });
 
     if (!updatedStudent) {
-      return res.status(404).json({ message: "Course not found" });
+      return res.status(404).json({ message: "Student not found" });
     }
 
     res.status(200).json({
       message: "Student updated successfully",
-      course: updatedStudent,
+      student: updatedStudent,
     });
   } catch (error) {
     console.error("Error updating student:", error);
     res.status(500).json({ message: "Error updating student", error });
   }
 };
+
+
+
 
 // student data update
  
