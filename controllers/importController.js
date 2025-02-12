@@ -58,7 +58,7 @@ const importFromExcel = async (req, res) => {
     const insertedUsers = await Student.insertMany(userRows);
 
     res.status(200).json({
-      message: "File processed successfully!",
+      message: "Students Imported Successfully!",
       insertedUserRecords: insertedUsers.length,
       userData: insertedUsers,
     });
