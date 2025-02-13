@@ -125,60 +125,67 @@ exports.updateBatchCategory = async (req, res) => {
     console.log("Request Body:", req.body);
 
     let updatedBatchCategory = null;
+    let updatedBatches = [];
 
-    //   Update a single batch if `_id` is provided
-    if (_id) {
+    // CASE 1: Update a single batch if only `_id` is provided
+    if (_id && (!batchIds || !student)) {
       updatedBatchCategory = await BatchCategory.findByIdAndUpdate(
         _id,
-        updateFields,
-        { new: true }
+        { $set: updateFields },
+        { new: true, runValidators: true }
       );
 
       if (!updatedBatchCategory) {
         return res.status(404).json({ message: "Batch Category not found" });
       }
+
+      console.log("Updated Single Batch:", updatedBatchCategory);
+      return res.status(200).json({
+        message: "Batch Category updated successfully",
+        batch: updatedBatchCategory,
+      });
     }
 
-    //   Update multiple batches with student replacement logic
-    let updatedBatches = null;
-    if (batchIds && student && student.length > 0) {
+    // CASE 2: If `batchIds` & `student` are provided, replace students correctly
+    if (batchIds?.length && student?.length) {
       updatedBatches = await Promise.all(
         batchIds.map(async (batchId) => {
           const batch = await BatchCategory.findById(batchId);
           if (!batch) return null;
 
-          student.forEach((newStudent) => {
-            const existingIndex = batch.student.findIndex(
-              (s) =>
-                s.registration_number === newStudent.registration_number ||
-                (s.first_name === newStudent.first_name &&
-                  s.last_name === newStudent.last_name)
-            );
+          // Convert existing students into a Set to prevent duplicates
+          let existingStudents = new Set(batch.student.map((s) => String(s)));
 
-            if (existingIndex !== -1) {
-              //   Replace existing student
-              batch.student[existingIndex] = newStudent;
-            } else {
-              //   Push new student if not found
-              batch.student.push(newStudent);
-            }
+          student.forEach((newStudentId) => {
+            existingStudents.add(String(newStudentId)); // Add unique student IDs
           });
 
-          return batch.save(); //   Save batch after modification
+          batch.student = Array.from(existingStudents); // Convert Set back to an array
+
+          return batch.save(); // Save batch after modification
         })
       );
+
+      updatedBatches = updatedBatches.filter((batch) => batch !== null);
     }
 
+    console.log("Updated Multiple Batches:", updatedBatches);
+
     return res.status(200).json({
-      message: "Batch Category updated successfully",
-      batch: updatedBatchCategory,
+      message: "Batch Categories updated successfully",
       updatedBatches,
     });
 
   } catch (error) {
+    console.error("Error updating batch:", error);
     return res.status(500).json({ message: `Error updating batch: ${error.message}` });
   }
 };
+
+
+
+
+
 
 
 
