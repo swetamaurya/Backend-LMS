@@ -121,13 +121,32 @@ exports.getBatchCategoryById = async (req, res) => {
 // Update a batch
 exports.updateBatchCategory = async (req, res) => {
   try {
-    const { _id, batchIds, student, ...updateFields } = req.body;
+    const { _id, batchIds, student, deleteStudentId, batchIdForDeletion, ...updateFields } = req.body;
     console.log("Request Body:", req.body);
 
     let updatedBatchCategory = null;
     let updatedBatches = [];
 
-    // CASE 1: Update a single batch if only `_id` is provided
+    // CASE 1: Delete a student from a batch if `deleteStudentId` and `batchIdForDeletion` are provided
+    if (deleteStudentId && batchIdForDeletion) {
+      const updatedBatch = await BatchCategory.findByIdAndUpdate(
+        batchIdForDeletion,
+        { $pull: { student: deleteStudentId } }, // Remove student reference
+        { new: true }
+      );
+
+      if (!updatedBatch) {
+        return res.status(404).json({ success: false, message: "Batch not found" });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: "Student removed from batch successfully",
+        batch: updatedBatch,
+      });
+    }
+
+    // CASE 2: Update a single batch if only `_id` is provided
     if (_id && (!batchIds || !student)) {
       updatedBatchCategory = await BatchCategory.findByIdAndUpdate(
         _id,
@@ -146,7 +165,7 @@ exports.updateBatchCategory = async (req, res) => {
       });
     }
 
-    // CASE 2: If `batchIds` & `student` are provided, replace students correctly
+    // CASE 3: If `batchIds` & `student` are provided, replace students correctly
     if (batchIds?.length && student?.length) {
       updatedBatches = await Promise.all(
         batchIds.map(async (batchId) => {
@@ -182,6 +201,8 @@ exports.updateBatchCategory = async (req, res) => {
   }
 };
 
+
+ 
 
 
 
