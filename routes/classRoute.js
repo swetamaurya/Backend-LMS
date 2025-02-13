@@ -8,9 +8,9 @@ const { createClass,
 const { auth } = require("../middleware/authorization");
 const router = express.Router();
 
-router.post("/post",upload.array('materials'), auth(["Admin","Instructor"]),createClass);
-router.get("/getAll", auth(["Admin","Instructor"]), getAllClasses);
-router.get("/get", auth(["Admin","Instructor"]),getSingleClass);
-router.post("/update", upload.array('materials'), auth(["Admin","Instructor"]), updateClass);
+router.post("/post",upload.array('materials'), auth(["Admin","Instructor","Students"]),createClass);
+router.get("/getAll", auth(["Admin","Instructor","Students"]), getAllClasses);
+router.get("/get", auth(["Admin","Instructor","Students"]),getSingleClass);
+router.post("/update", upload.array('materials'), auth(["Admin","Instructor","Students"]), updateClass);
 
 module.exports = router;

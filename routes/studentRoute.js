@@ -19,7 +19,7 @@ router.post(
 
 router.get("/getAll", auth(["Admin","Instructor"]),getAllStudents);
 router.get("/get", auth(["Admin","Instructor"]), getStudent);
-router.post("/login", auth(["Admin","Instructor"]), loginStudent);
+router.post("/login",   loginStudent);
 
 router.post(
     "/update",
