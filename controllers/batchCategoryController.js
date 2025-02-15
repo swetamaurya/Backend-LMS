@@ -1,5 +1,4 @@
 const BatchCategory = require("../models/batchCategoryModel");
-
  
  
 
@@ -172,14 +171,22 @@ exports.updateBatchCategory = async (req, res) => {
           const batch = await BatchCategory.findById(batchId);
           if (!batch) return null;
 
-          // Convert existing students into a Set to prevent duplicates
-          let existingStudents = new Set(batch.student.map((s) => String(s)));
+          student.forEach((newStudent) => {
+            const existingIndex = batch.student.findIndex(
+              (s) =>
+                s.registration_number === newStudent.registration_number ||
+                (s.first_name === newStudent.first_name &&
+                  s.last_name === newStudent.last_name)
+            );
 
-          student.forEach((newStudentId) => {
-            existingStudents.add(String(newStudentId)); // Add unique student IDs
+            if (existingIndex !== -1) {
+              //   Replace existing student
+              batch.student[existingIndex] = newStudent;
+            } else {
+              //   Push new student if not found
+              batch.student.push(newStudent);
+            }
           });
-
-          batch.student = Array.from(existingStudents); // Convert Set back to an array
 
           return batch.save(); // Save batch after modification
         })
@@ -200,13 +207,6 @@ exports.updateBatchCategory = async (req, res) => {
     return res.status(500).json({ message: `Error updating batch: ${error.message}` });
   }
 };
-
-
- 
-
-
-
-
 
 
 
