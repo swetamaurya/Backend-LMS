@@ -7,6 +7,7 @@ const courseSchema = new mongoose.Schema({
   status: { type: String , default: "Active" },
   duration: { type: String }, // Duration in days
   category:{ type: mongoose.Schema.Types.ObjectId, ref: "courseCategory" },
+  instructor:{ type: mongoose.Schema.Types.ObjectId, ref: "User" },
   thumbnail: { type: String },
   createdBy: { type: String },
   statusOfCards: { type: String }, //store as draft or published

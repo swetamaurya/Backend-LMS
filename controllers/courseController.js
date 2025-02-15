@@ -51,7 +51,7 @@ exports.createCourse = async (req, res) => {
   
   
 
-
+  
 // // ================================================================================================
 // // ================================================================================================
 // Get all courses with pagination
@@ -62,7 +62,7 @@ exports.getAllCourses = async (req, res) => {
       const skip = (parseInt(page) - 1) * parseInt(limit);
       const totalCourses = await Course.countDocuments();
   
-      const courses = await Course.find().populate('category')
+      const courses = await Course.find().populate('category instructor')
       .sort({ _id: -1 })
       .skip(skip)
       .limit(parseInt(limit))
@@ -93,7 +93,7 @@ exports.getAllCourses = async (req, res) => {
   if (!_id) {
     return res.status(400).json({ message: 'Course ID (_id) is required.' });
   }
-      const course = await Course.findById(_id).populate('category').lean();
+      const course = await Course.findById(_id).populate('category instructor').lean();
       if (!course) return res.status(404).json({ message: "Course not found" });
   
       res.status(200).json({ message: "Course fetched successfully!", course });
