@@ -120,34 +120,58 @@ exports.getBatchCategoryById = async (req, res) => {
 // Update a batch
 exports.updateBatchCategory = async (req, res) => {
   try {
-    const { _id, batchIds, student, ...updateFields } = req.body;
+    const { _id, batchIds, student, deleteStudentId, batchIdForDeletion, ...updateFields } = req.body;
     console.log("Request Body:", req.body);
 
     let updatedBatchCategory = null;
+    let updatedBatches = [];
 
-    //   Update a single batch if `_id` is provided
-    if (_id) {
+    // CASE 1: Delete a student from a batch if `deleteStudentId` and `batchIdForDeletion` are provided
+    if (deleteStudentId && batchIdForDeletion) {
+      const updatedBatch = await BatchCategory.findByIdAndUpdate(
+        batchIdForDeletion,
+        { $pull: { student: deleteStudentId } }, // Remove student reference
+        { new: true }
+      );
+
+      if (!updatedBatch) {
+        return res.status(404).json({ success: false, message: "Batch not found" });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: "Student removed from batch successfully",
+        batch: updatedBatch,
+      });
+    }
+
+    // CASE 2: Update a single batch if only `_id` is provided
+    if (_id && (!batchIds || !student)) {
       updatedBatchCategory = await BatchCategory.findByIdAndUpdate(
         _id,
-        updateFields,
-        { new: true }
+        { $set: updateFields },
+        { new: true, runValidators: true }
       );
 
       if (!updatedBatchCategory) {
         return res.status(404).json({ message: "Batch Category not found" });
       }
+
+      console.log("Updated Single Batch:", updatedBatchCategory);
+      return res.status(200).json({
+        message: "Batch Category updated successfully",
+        batch: updatedBatchCategory,
+      });
     }
 
-    //   Update multiple batches with student replacement logic
-    let updatedBatches = null;
-    if (batchIds && student && student.length > 0) {
+    // CASE 3: If `batchIds` & `student` are provided, replace students correctly
+    if (batchIds?.length && student?.length) {
       updatedBatches = await Promise.all(
         batchIds.map(async (batchId) => {
           const batch = await BatchCategory.findById(batchId);
           if (!batch) return null;
- 
-          student.forEach((newStudent) => {
 
+          student.forEach((newStudent) => {
             const existingIndex = batch.student.findIndex(
               (s) =>
                 s.registration_number === newStudent.registration_number ||
@@ -164,188 +188,25 @@ exports.updateBatchCategory = async (req, res) => {
             }
           });
 
-          return batch.save(); //   Save batch after modification
+          return batch.save(); // Save batch after modification
         })
       );
+
+      updatedBatches = updatedBatches.filter((batch) => batch !== null);
     }
 
+    console.log("Updated Multiple Batches:", updatedBatches);
+
     return res.status(200).json({
-      message: "Batch Category updated successfully",
-      batch: updatedBatchCategory,
+      message: "Batch Categories updated successfully",
       updatedBatches,
     });
 
   } catch (error) {
+    console.error("Error updating batch:", error);
     return res.status(500).json({ message: `Error updating batch: ${error.message}` });
   }
 };
-
-// exports.updateBatchCategory = async (req, res) => {
-//   try {
-//     const { _id, batchIds, student, ...updateFields } = req.body;
-//     console.log("Request Body:", req.body);
-
-//     let updatedBatchCategory = null;
-
-//     //   Update a single batch if `_id` is provided
-//     if (_id) {
-//       updatedBatchCategory = await BatchCategory.findByIdAndUpdate(
-//         _id,
-//         updateFields,
-//         { new: true }
-//       );
-
-//       if (!updatedBatchCategory) {
-//         return res.status(404).json({ message: "Batch Category not found" });
-//       }
-//     }
-
-//     //   Update multiple batches with student replacement logic
-//     let updatedBatches = null;
-//     if (batchIds && student && student.length > 0) {
-//       updatedBatches = await Promise.all(
-//         batchIds.map(async (batchId) => {
-//           const batch = await BatchCategory.findById(batchId);
-//           if (!batch) return null;
- 
-//           student.forEach((newStudent) => {
-//             if (!batch.student || !Array.isArray(batch.student)) {
-//               // ✅ Initialize as an empty array if batch.student is missing or not an array
-//               batch.student = [];
-//             }
-          
-//             // Check if the student already exists in batch.student array
-//             const existingIndex = batch.student.findIndex(
-//               (s) =>
-//                 s.registration_number === newStudent.registration_number ||
-//                 (s.first_name === newStudent.first_name &&
-//                   s.last_name === newStudent.last_name)
-//             );
-          
-//             if (existingIndex !== -1) {
-//               // ✅ Update the existing student
-//               batch.student[existingIndex] = {
-//                 ...batch.student[existingIndex], // Keep existing properties
-//                 ...newStudent, // Merge new data
-//               };
-//             } else {
-//               // ✅ Add new student if they do not exist
-//               batch.student.push(newStudent);
-//             }
-//           });
-          
-//           // Save batch after updating the student array
-//           await batch.save();
-          
-//         })
-//       );
-//     }
-
-//     return res.status(200).json({
-//       message: "Batch Category updated successfully",
-//       batch: updatedBatchCategory,
-//       updatedBatches,
-//     });
-
-//   } catch (error) {
-//     return res.status(500).json({ message: `Error updating batch: ${error.message}` });
-//   }
-// };
-
-// exports.updateBatchCategory = async (req, res) => {
-//   try {
-//     const { batchIds, student, ...updateFields } = req.body;
-
-  //   if (!batchIds || batchIds.length === 0) {
-  //     return res.status(400).json({ message: "Batch IDs are required" });
-  //   }
-
-  //   if (!student || student.length === 0) {
-  //     return res.status(400).json({ message: "Students data is required" });
-  //   }
-
-  //   let updatedBatches = [];
-
-  //   // Loop through each batchId
-  //   for (const batchId of batchIds) {
-  //     let batch = await BatchCategory.findById(batchId);
-  //     console.log('batchstudent', batch.student['_id']);
-      
-  //     if (!batch) {
-  //       // 🛑 If batch doesn't exist, create a new one
-  //       batch = new BatchCategory({
-  //         _id: batchId,
-  //         student: student, // Add students to new batch
-  //         ...updateFields,
-  //       });
-  //       console.log(
-  //         'batch' , batch
-  //       );
-  //       // student.forEach((newStudent) => {
-  //       //   if (!existingStudentIds.has(String(newStudent._id))) {
-  //       //     batch.student.push(newStudent);
-  //       //   }
-  //       // });
-  //     } else {
-  //       console.log('btach',batch);
-  //       // ✅ If batch exists, add new students only if they don't exist
-  //       const existingStudentIds = new Set(batch.student.map((s) => String(s._id)));
-
-  //       student.forEach((newStudent) => {
-  //         if (!existingStudentIds.has(String(newStudent._id))) {
-  //           batch.student.push(newStudent);
-  //         }
-  //       });
-  //     }
-
-  //     const updatedBatch = await batch.save();
-  //     updatedBatches.push(updatedBatch);
-  //   }
-
-  //   return res.status(200).json({
-  //     message: "Batch categories updated successfully",
-  //     updatedBatches,
-  //   });
-
-  // } catch (error) {
-  //   return res.status(500).json({ message: `Error updating batch: ${error.message}` });
-  // }
-//   const batchCategory = await BatchCategory.find();
-//   let update; 
-//   let response=[];
-//   batchCategory.map((e)=>{
-//     if(e.createList!='' && e.student!=[]){
-//       if(e.student._id === student){
-//         student.forEach((newStudent) => {
-//           update = BatchCategory.findByIdAndUpdate(newStudent)
-//         });
-//       }
-//       else{
-//         batch = new BatchCategory({
-//                   student: student, // Add students to new batch
-//                   ...updateFields,
-//                 });
-//       }
-//       response.push(student)
-//       response.push(...updateFields)
-//     }
-//   })
-//   res.status(200).json({message:'Data added successfully: ',response})
-// }catch(error){
-//   console.log(error);
-//   res.status(500).json({message:'Internal Server Error: ',error})
-// }
-// };
-
-
-
-
-
-
-
-
-
-
 
 
 

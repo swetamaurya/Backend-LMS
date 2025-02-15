@@ -31,7 +31,7 @@ const batchSchema = new mongoose.Schema({
   batchId: { type: String,   }, // Unique batchId
   batchYear: { type: String },
   durationFrom: { type: String },
-  durationTo: { type: String },
+  durationTo: { type: String },  
   totalDays: { type: String },
   status: { type: String, default: "Active" },
   batchCategory: [{ type: mongoose.Schema.Types.ObjectId, ref: "BatchCategory" }],
