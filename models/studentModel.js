@@ -11,7 +11,7 @@ const SeqStudent = mongoose.model("SeqStudent", sequenceSchema);
 
 // Student Schema
 const studentSchema = new mongoose.Schema({
-  studentId: { type: String  }, // ID will be set when creating a new student
+  studentId: { type: String, unique: true, sparse: true   }, // ID will be set when creating a new student
   batchId: { type: mongoose.Schema.Types.ObjectId, ref: "Batch" },
   roles: { type: String, default: "Students" },
   application_number: { type: String },
