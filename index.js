@@ -27,6 +27,7 @@ const batchCategoryRouter = require("./routes/batchCategoryRoute");
 const classRouter = require("./routes/classRoute");
 const importRouter = require("./routes/importRoute");
 const exportRouter = require("./routes/exportRoute");
+const searchRouter = require("./routes/searchRoute");
 
 dotenv.config();
 
@@ -53,6 +54,7 @@ app.use("/student", studentRouter);
 app.use("/class",classRouter)
 app.use('/import',importRouter)
 app.use("/export", exportRouter);
+app.use("/search", searchRouter);
 
  
 
