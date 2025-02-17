@@ -76,25 +76,34 @@ exports.getAllBatchCategory = async (req, res) => {
 // Get a single batch by ID
 exports.getBatchCategoryById = async (req, res) => {
   try {
-    const { _id, page , limit  } = req.query; // Default page=1, limit=0 (all records)
+    const { _id, page, limit } = req.query; // Default page=1, limit=0 (all records)
 
     if (!_id) {
       return res.status(400).json({ message: "Batch ID (_id) is required" });
     }
 
-    //  Fetch batch by ID and populate students
+    const skip = (parseInt(page) - 1) * parseInt(limit || 0);
+
+    // Fetch batch category with student details
     const batch = await BatchCategory.findById(_id)
-      .populate("student");
+    .populate({
+      path: "student",
+      options: {
+        sort: { _id :-1 },  
+        skip: skip,
+        limit: parseInt(limit),
+      },
+    });
 
     if (!batch) {
       return res.status(404).json({ message: "Batch Category not found" });
     }
 
-    //  Count total students in the batch (not batch categories)
+    // Count total students in the batch
     const totalCount = batch.student ? batch.student.length : 0;
     const totalPages = limit > 0 ? Math.ceil(totalCount / limit) : 1;
 
-    //  Pagination object
+    // Pagination object
     const pagination = {
       totalCount,
       totalPages,
@@ -103,15 +112,17 @@ exports.getBatchCategoryById = async (req, res) => {
     };
 
     res.status(200).json({
-      message: "Batch Category fetched successfully",
+      message: "Batch Category fetched successfully!",
       batch,
       pagination,
     });
 
   } catch (error) {
+    console.error("Error fetching batch:", error);
     res.status(500).json({ message: `Error fetching batch: ${error.message}` });
   }
 };
+
 
 
 
@@ -170,7 +181,7 @@ exports.updateBatchCategory = async (req, res) => {
         batchIds.map(async (batchId) => {
           const updatedBatch = await BatchCategory.findByIdAndUpdate(
             batchId,
-            { $addToSet: { student: { $each: student } } }, // ✅ Ensures no duplicates
+            { $addToSet: { student: { $each: student } } }, //   Ensures no duplicates
             { new: true }
           );
 
