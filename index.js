@@ -67,33 +67,37 @@ app.get("/test", async (req, res) => {
 });
 
 // ----------- Agora Token Endpoints -----------
-
-// 1. RTC Token Generation (for audio/video channels)
-app.post("/rtc-token", (req, res) => {
-  const { channelName, uid, role } = req.body;
-  if (!channelName || !uid || !role) {
-    return res.status(400).json({ error: "Invalid request parameters" });
+// ----------- Agora Token Endpoints -----------
+// ----------------- New GET Token Endpoint -----------------
+// Usage: GET /rtcToken?channel=CHANNEL_NAME&uid=USER_ID
+app.get("/rtcToken", (req, res) => {
+  const channelName = req.query.channel;
+  if (!channelName) {
+    return res.status(400).json({ error: "channel is required" });
   }
-
-  const expirationTimeInSeconds = 3600; // 1 hour
+  
+  let uid = req.query.uid;
+  if (!uid || uid === "") {
+    uid = 0;
+  } else {
+    uid = Number(uid);
+  }
+  
+  const expirationTimeInSeconds = 3600; // 1 hour validity
   const currentTimestamp = Math.floor(Date.now() / 1000);
   const privilegeExpiration = currentTimestamp + expirationTimeInSeconds;
-
-  // Choose role based on the request (e.g. "publisher" for teacher)
-  const rtcRole = role === "publisher" ? RtcRole.PUBLISHER : RtcRole.SUBSCRIBER;
-
+  
+  // Use the Agora Access Token package (you already have it)
   const token = RtcTokenBuilder.buildTokenWithUid(
-    APP_ID,
-    APP_CERTIFICATE,
+    APP_ID,              // from your env or constant
+    APP_CERTIFICATE,     // from your env or constant
     channelName,
     uid,
-    rtcRole,
+    (req.body.role === "publisher" ? RtcRole.PUBLISHER : RtcRole.SUBSCRIBER) || RtcRole.PUBLISHER,
     privilegeExpiration
   );
-
   return res.json({ token });
 });
-
 // 2. RTM Token Generation (for chat / real-time messaging)
 app.post("/rtm-token", (req, res) => {
   const { uid } = req.body;
