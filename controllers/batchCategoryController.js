@@ -164,31 +164,17 @@ exports.updateBatchCategory = async (req, res) => {
       });
     }
 
-    // CASE 3: If `batchIds` & `student` are provided, replace students correctly
+    // CASE 3: If `batchIds` & `student` are provided, add students uniquely
     if (batchIds?.length && student?.length) {
       updatedBatches = await Promise.all(
         batchIds.map(async (batchId) => {
-          const batch = await BatchCategory.findById(batchId);
-          if (!batch) return null;
+          const updatedBatch = await BatchCategory.findByIdAndUpdate(
+            batchId,
+            { $addToSet: { student: { $each: student } } }, // ✅ Ensures no duplicates
+            { new: true }
+          );
 
-          student.forEach((newStudent) => {
-            const existingIndex = batch.student.findIndex(
-              (s) =>
-                s.registration_number === newStudent.registration_number ||
-                (s.first_name === newStudent.first_name &&
-                  s.last_name === newStudent.last_name)
-            );
-
-            if (existingIndex !== -1) {
-              //   Replace existing student
-              batch.student[existingIndex] = newStudent;
-            } else {
-              //   Push new student if not found
-              batch.student.push(newStudent);
-            }
-          });
-
-          return batch.save(); // Save batch after modification
+          return updatedBatch;
         })
       );
 
@@ -207,6 +193,8 @@ exports.updateBatchCategory = async (req, res) => {
     return res.status(500).json({ message: `Error updating batch: ${error.message}` });
   }
 };
+
+
 
 
 

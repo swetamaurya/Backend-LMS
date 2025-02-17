@@ -14,7 +14,7 @@ const router = express.Router();
 
  router.get("/get", auth(["Admin"]), getAdmin);
 
- router.post("/update", auth(["Admin"]),upload.fields([
+ router.post("/update",upload.fields([
     { name: 'image', maxCount: 1 },
     { name: 'coverImg', maxCount: 1 },]), updateAdmin);
  

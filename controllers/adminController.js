@@ -85,6 +85,7 @@ const loginAdmin = async (req, res) => {
 
   try {
     const admin = await Admin.findOne({ email: email.toLowerCase() }).populate("roles");
+    console.log("casdcasd",admin)
 
     if (!admin) {
       return res.status(400).json({ message: "Invalid credentials!" });
@@ -102,6 +103,7 @@ const loginAdmin = async (req, res) => {
         roles: admin.roles,
         permissions: admin.permissions,
         email: admin.email,
+        image: admin.image,
       },
       process.env.SECRET_KEY,
       { expiresIn: "30000h" }
@@ -116,6 +118,8 @@ const loginAdmin = async (req, res) => {
         email: admin.email,
         roles: admin.roles,
         permissions: admin.permissions,
+        image: admin.image,
+
       },
     });
   } catch (error) {
