@@ -28,6 +28,7 @@ const classRouter = require("./routes/classRoute");
 const importRouter = require("./routes/importRoute");
 const exportRouter = require("./routes/exportRoute");
 const searchRouter = require("./routes/searchRoute");
+const resourcesRouter = require('./routes/resourcesRoute')
 
 dotenv.config();
 
@@ -55,6 +56,7 @@ app.use("/class",classRouter)
 app.use('/import',importRouter)
 app.use("/export", exportRouter);
 app.use("/search", searchRouter);
+app.use("/resource", resourcesRouter);
 
  
 
