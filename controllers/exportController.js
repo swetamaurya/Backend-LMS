@@ -7,7 +7,7 @@ const ExcelJS = require("exceljs");
 const BatchCategory = require("../models/batchCategoryModel");
 const Student = require("../models/studentModel");
 const courseCategory = require("../models/courseCategoryModel")
-// 
+ 
 
 
  
@@ -158,9 +158,17 @@ const exportData = async (req, res) => {
     const { page, limit } = req.query;
     const { _id } = req.body;
 
-    try {
+        try {
+        if (!_id || (Array.isArray(_id) && _id.length === 0)) {
+            return res.status(400).json({ error: "No _id provided for export." });
+        }
+
+        const _idArray = Array.isArray(_id) ? _id : [_id];
+
         const models = [
-            { name: "Student", model: Student }
+            { name: "Student", model: Student },
+            {name :"BatchCategory", model: BatchCategory}
+
         ];
 
         const skip = page ? (page - 1) * (limit || 10) : 0;
@@ -168,14 +176,18 @@ const exportData = async (req, res) => {
         const totalData = {};
 
         for (const { name, model } of models) {
-            let query = model.find();
+      let query = model.find({ _id: { $in: _idArray } }).sort({ _id: -1 }).skip(skip).limit(parsedLimit);
 
+            if (name === "BatchCategory") {
+            query = query.populate("student")
+            
+           } 
             if (_id && (!Array.isArray(_id) || _id.length > 0)) {
                 const _idArray = Array.isArray(_id) ? _id : [_id];
                 query = query.where('_id').in(_idArray);
             }
 
-            const data = await query.sort({ _id: -1 })
+            const data = await query
             
             if (data.length > 0) {
                 totalData[name] = data;
@@ -199,7 +211,7 @@ const generateExcelFile = async (res, data) => {
 
     const flattenData = (entry) => {
         const flatObject = {};
-        const excludeKeys = ["_id", "__v", "id"];
+        const excludeKeys = ["_id", "__v", "id", "password"];
 
         const processArray = (key, value, prefix = "") => {
             value.forEach((item, index) => {
@@ -275,6 +287,6 @@ const generateExcelFile = async (res, data) => {
 
     await workbook.xlsx.write(res);
     res.end();
-};
+}; 
 
   module.exports = exportData
