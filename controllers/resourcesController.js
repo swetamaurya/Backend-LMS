@@ -2,40 +2,33 @@ const Course = require('../models/courseModel');
 
 exports.getAllResources = async (req, res) => {
     try {
-        const { page, limit } = req.query;
-    
-        const query = {};
-        const skip = (parseInt(page) - 1) * parseInt(limit || 0);
-    
-        // Fetch all courses first
-        const courses = await Course.find(query).sort({ createdAt: -1 });
-    
-        // Filter courses that have images or files
-        const filteredCourses = courses.filter(course => 
-            (course.gallery && course.gallery.length > 0) || 
-            (course.materials && course.materials.length > 0)
-        );
-    
-        // Apply pagination to the filtered courses
-        const paginatedCourses = limit
-            ? filteredCourses.slice(skip, skip + parseInt(limit))
-            : filteredCourses;
-    
-        const totalCount = filteredCourses.length;
-        const totalPages = limit ? Math.ceil(totalCount / parseInt(limit)) : 1;
-    
+        const { page , limit} = req.query; // Default page = 1, limit = 10
+  
+        const skip = (parseInt(page) - 1) * parseInt(limit);
+        const totalCount = await Course.countDocuments();
+
+        // Fetch filtered courses directly from DB
+        const courses = await Course.find({
+            $or: [
+                { gallery: { $exists: true, $not: { $size: 0 } } },
+                { materials: { $exists: true, $not: { $size: 0 } } }
+            ]
+        }).skip(skip)
+        .limit(parseInt(limit))
+        .sort({ _id: -1 });
+
+ 
         res.status(200).json({
-            message: 'All Courses with photo and files are fetched',
-            data: paginatedCourses,
+            message: 'All Courses with photos and files are fetched',
+            data: courses,
             pagination: {
                 totalCount,
-                totalPages,
-                currentPage: limit ? parseInt(page) : null,
-                perPage: limit ? parseInt(limit) : totalCount,
+                totalPages: Math.ceil(totalCount / limit),
+                currentPage: parseInt(page),
+                pageSize: parseInt(limit),
             },
         });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
-    
 };
