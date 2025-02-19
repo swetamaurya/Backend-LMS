@@ -154,21 +154,65 @@ const courseCategory = require("../models/courseCategoryModel")
 
   
  
+// const exportData = async (req, res) => {
+//     const { page, limit } = req.query;
+//     const { _id } = req.body;
+
+//         try {
+//         if (!_id || (Array.isArray(_id) && _id.length === 0)) {
+//             return res.status(400).json({ error: "No _id provided for export." });
+//         }
+
+//         const _idArray = Array.isArray(_id) ? _id : [_id];
+
+//         const models = [
+//             { name: "Student", model: Student },
+//             {name :"BatchCategory", model: BatchCategory}
+
+//         ];
+
+//         const skip = page ? (page - 1) * (limit || 10) : 0;
+//         const parsedLimit = limit ? parseInt(limit) : 10;
+//         const totalData = {};
+
+//         for (const { name, model } of models) {
+//       let query = model.find({ _id: { $in: _idArray } }).sort({ _id: -1 }).skip(skip).limit(parsedLimit);
+
+//             if (name === "BatchCategory") {
+//             query = query.populate("student")
+            
+//            } 
+//             if (_id && (!Array.isArray(_id) || _id.length > 0)) {
+//                 const _idArray = Array.isArray(_id) ? _id : [_id];
+//                 query = query.where('_id').in(_idArray);
+//             }
+
+//             const data = await query
+            
+//             if (data.length > 0) {
+//                 totalData[name] = data;
+//             }
+//         }
+
+//         if (Object.keys(totalData).length === 0) {
+//             return res.status(404).json({ message: "No records found." });
+//         }
+
+//         return generateExcelFile(res, totalData);
+//     } catch (error) {
+//         console.error("Error exporting data:", error);
+//         return res.status(500).json({ error: `Internal server error: ${error.message}` });
+//     }
+// };
+
 const exportData = async (req, res) => {
     const { page, limit } = req.query;
     const { _id } = req.body;
 
-        try {
-        if (!_id || (Array.isArray(_id) && _id.length === 0)) {
-            return res.status(400).json({ error: "No _id provided for export." });
-        }
-
-        const _idArray = Array.isArray(_id) ? _id : [_id];
-
+    try {
         const models = [
             { name: "Student", model: Student },
-            {name :"BatchCategory", model: BatchCategory}
-
+            { name: "BatchCategory", model: BatchCategory }
         ];
 
         const skip = page ? (page - 1) * (limit || 10) : 0;
@@ -176,19 +220,31 @@ const exportData = async (req, res) => {
         const totalData = {};
 
         for (const { name, model } of models) {
-      let query = model.find({ _id: { $in: _idArray } }).sort({ _id: -1 }).skip(skip).limit(parsedLimit);
+            let query = model.find().sort({ _id: -1 }).skip(skip).limit(parsedLimit);
 
-            if (name === "BatchCategory") {
-            query = query.populate("student")
-            
-           } 
-            if (_id && (!Array.isArray(_id) || _id.length > 0)) {
-                const _idArray = Array.isArray(_id) ? _id : [_id];
-                query = query.where('_id').in(_idArray);
+            if (_id && Array.isArray(_id) && _id.length > 0) {
+                query = model.find({ _id: { $in: _id } }).sort({ _id: -1 }).skip(skip).limit(parsedLimit);
             }
 
-            const data = await query
-            
+            //   Ensure BatchCategory has FULL student details, not just IDs
+            if (name === "BatchCategory") {
+                query = query.populate({
+                    path: "student",
+                    populate: {
+                        path: "batchId",
+                        select: "batchTitle", // Include batchTitle from BatchCategory
+                    },
+                });            } 
+            //   Populate batchTitle correctly in Student
+            else if (name === "Student") {
+                query = query.populate({
+                    path: "batchId",
+                    select: "batchTitle batchId", // Include batchTitle
+                });
+            }
+
+            const data = await query;
+
             if (data.length > 0) {
                 totalData[name] = data;
             }
@@ -205,20 +261,21 @@ const exportData = async (req, res) => {
     }
 };
 
-
 const generateExcelFile = async (res, data) => {
     const workbook = new ExcelJS.Workbook();
 
     const flattenData = (entry) => {
         const flatObject = {};
-        const excludeKeys = ["_id", "__v", "id", "password"];
+        const excludeKeys = ["__v", "password", "_id", "id", "roles" ]; // Exclude unwanted fields
 
         const processArray = (key, value, prefix = "") => {
             value.forEach((item, index) => {
                 Object.entries(item).forEach(([nestedKey, nestedValue]) => {
                     if (!excludeKeys.includes(nestedKey)) {
                         flatObject[`${prefix}${key}_${index + 1}_${nestedKey}`] =
-                            Array.isArray(nestedValue) ? nestedValue.join(", ") : nestedValue || "-";
+                            Array.isArray(nestedValue) ? nestedValue.join(", ")
+                            : Buffer.isBuffer(nestedValue) ? nestedValue.toString("hex")
+                            : nestedValue || "-";
                     }
                 });
             });
@@ -227,16 +284,28 @@ const generateExcelFile = async (res, data) => {
         for (const [key, value] of Object.entries(entry)) {
             if (excludeKeys.includes(key)) continue;
 
-            if (Array.isArray(value)) {
+            if (Buffer.isBuffer(value)) {
+                flatObject[key] = value.toString("hex"); // Convert Buffer to hex string
+            } else if (value && value._bsontype === "ObjectId") {
+                flatObject[key] = value.toString(); // Convert ObjectId to string
+            } else if (Array.isArray(value)) {
                 processArray(key, value);
-            } else if (typeof value === "object" && value !== null) {
-                Object.entries(value).forEach(([nestedKey, nestedValue]) => {
-                    if (!excludeKeys.includes(nestedKey)) {
-                        flatObject[`${key}_${nestedKey}`] =
-                            Array.isArray(nestedValue) ? nestedValue.join(", ") : nestedValue || "-";
-                    }
-                });
-            } else {
+
+            } 
+            else if (typeof value === "object" && value !== null) {
+                if (key === "batchId" && value.batchTitle) {
+                    flatObject[key] = value.batchTitle; // Show only batchTitle
+                } else {
+                    Object.entries(value).forEach(([nestedKey, nestedValue]) => {
+                        if (!excludeKeys.includes(nestedKey)) {
+                            flatObject[`${key}_${nestedKey}`] =
+                                Array.isArray(nestedValue) ? nestedValue.join(", ")
+                                : Buffer.isBuffer(nestedValue) ? nestedValue.toString("hex")
+                                : nestedValue || "-";
+                        }
+                    });
+                }
+                        } else {
                 flatObject[key] = value || "-";
             }
         }
@@ -287,6 +356,8 @@ const generateExcelFile = async (res, data) => {
 
     await workbook.xlsx.write(res);
     res.end();
-}; 
+};
+
+
 
   module.exports = exportData
