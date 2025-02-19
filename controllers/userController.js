@@ -29,7 +29,7 @@ const login = async (req, res) => {
 
   try {
     // Find user by email (case-insensitive)
-    const user = await User.findOne({ email: email.toLowerCase() });
+    const user = await User.findOne({ email: email.toLowerCase() }).populate("roles")
 
     if (!user) {
       return res.status(400).json('Invalid login credentials!');
@@ -49,7 +49,9 @@ const login = async (req, res) => {
         _id: user._id, // Include only essential user information in the token
         roles: user.roles,
         email: user.email,
-        name: user.name,
+        first_name: user.first_name,
+        last_name: user.last_name,
+
         image: user.image,
       },
       process.env.SECRET_KEY,
@@ -61,7 +63,9 @@ const login = async (req, res) => {
       token,
       user: {
         _id: user._id,
-        name: user.name,
+        first_name: user.first_name,
+        last_name: user.last_name,
+
         email: user.email,
         roles: user.roles,
         image: user.image,
