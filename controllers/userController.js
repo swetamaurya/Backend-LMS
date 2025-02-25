@@ -85,7 +85,7 @@ const login = async (req, res) => {
         last_name: user.last_name,
           email: user.email,
         roles: userRoles,
-        permissions: userPermissions, // ✅ Now permissions are included in the response
+        permissions: userPermissions,  
         image: user.image,
       },
     });

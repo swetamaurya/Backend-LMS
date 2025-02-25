@@ -130,13 +130,15 @@ const io = socketIo(server, {
   },
 });
 
-io.on("connection", (socket) => {
-  console.log("New client connected:", socket.id);
 
-  socket.on("disconnect", () => {
-    console.log("Client disconnected:", socket.id);
+// ----------- Start the Server -----------
+//------------ Lucky code -----------------
+io.on("connection", (socket) => {
+  socket.on("user-message", (name, role, message) => {
+    io.emit("message", name, role, message);
   });
 });
+
 
 // ----------- Start the Server -----------
 server.listen(PORT, async () => {
