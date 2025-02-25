@@ -23,13 +23,8 @@ function generateOtp() {
 
 const login = async (req, res) => {
   try {
-<<<<<<< HEAD
-    const { email, password } = req.body;
-=======
-    // Find user by email (case-insensitive)
-    const user = await User.findOne({ email: email.toLowerCase() }).populate("roles")
->>>>>>> 3d25eb6d335f79278e3316bf41e188533710ea3f
-
+     const { email, password } = req.body;
+  
     if (!email || !password) {
       return res.status(400).json({ message: "Please provide email and password!." });
     }
@@ -73,12 +68,9 @@ const login = async (req, res) => {
         email: user.email,
         first_name: user.first_name,
         last_name: user.last_name,
-<<<<<<< HEAD
-        permissions: userPermissions, // ✅ Now permissions are included
-=======
-
->>>>>>> 3d25eb6d335f79278e3316bf41e188533710ea3f
-        image: user.image,
+         permissions: userPermissions, // ✅ Now permissions are included
+ 
+         image: user.image,
       },
       process.env.SECRET_KEY,
       { expiresIn: '10h' } // Token expires in 10 hours
@@ -91,11 +83,7 @@ const login = async (req, res) => {
         _id: user._id,
         first_name: user.first_name,
         last_name: user.last_name,
-<<<<<<< HEAD
-=======
-
->>>>>>> 3d25eb6d335f79278e3316bf41e188533710ea3f
-        email: user.email,
+          email: user.email,
         roles: userRoles,
         permissions: userPermissions, // ✅ Now permissions are included in the response
         image: user.image,
