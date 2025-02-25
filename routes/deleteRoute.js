@@ -5,8 +5,8 @@ const { deleteAll, deleteFile }   = require("../controllers/deleteController");
  
 
 // Delete All Records (Protected route)
-router.post("/all", auth(["Admin", "Instructor"]), deleteAll);
+router.post("/all", auth(["Admin", "Instructor","Manager","HR"]), deleteAll);
 
-router.post('/file', auth(["Admin", "Instructor"]), deleteFile)
+router.post('/file', auth(["Admin", "Instructor","Manager","HR"]), deleteFile)
 
 module.exports = router;

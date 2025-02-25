@@ -9,7 +9,7 @@ const upload = multer({ storage });
   
 
 // Import data from Excel
-router.post("/student",  auth(["Admin", "Instructor"]), upload.single("file"), importFromExcel);
+router.post("/student",  auth(["Admin", "Instructor","Manager","HR"]), upload.single("file"), importFromExcel);
 
 module.exports = router;
 

@@ -7,7 +7,7 @@ const roleSchema = new mongoose.Schema({
   roleId: { type: String }, // Automatically generated ID
   roles: { type: String  }, // Use 'roles' field for role name
   status: { type: String, default: "Active" },
-  permission :[String],
+  permissions :[String],
   name: { type: mongoose.Schema.Types.ObjectId, ref: "User" ,default :null},
   createdAt: {
     type: String,

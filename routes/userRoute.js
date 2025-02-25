@@ -28,7 +28,7 @@ router.post('/resetPassword',   resetPassword)
 
 router.post(
   '/post',
-  auth(['Admin', 'HR']),
+  auth(["Admin","Instructor","Manager","HR"]),
   upload.fields([
     { name: 'image', maxCount: 1 }, // Single file for image
     { name: 'files', maxCount: 10 }, // Multiple files
@@ -41,19 +41,19 @@ router.post(
 //////////////////////////////////////////////////////////////// get single user ////////////////////////////////////////////////////////////////
 
 
-router.get("/get", auth(['Admin']), getUser);
+router.get("/get", auth(["Admin","Instructor","Manager","HR"]), getUser);
 
 
 //////////////////////////////////////////////////////////////// get all user ////////////////////////////////////////////////////////////////
 
 
-router.get("/getAll", auth(["Admin"]), getAllUser);
+router.get("/getAll", auth(["Admin","Instructor","Manager","HR"]), getAllUser);
 
 
 //////////////////////////////////////////////////////////////// user update ////////////////////////////////////////////////////////////////
 
 
-router.post("/update",  auth(['Admin']),
+router.post("/update",  auth(["Admin","Instructor","Manager","HR"]),
 upload.fields([
   { name: 'image', maxCount: 1 },
   { name: 'files', maxCount: 10 },

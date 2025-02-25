@@ -1,33 +1,54 @@
 const Class = require("../models/classModel");
- 
- 
-
-// Create a live/recorded class
+const { uploadFileToFirebase } = require("../utils/fireBase");
+  
 exports.createClass = async (req, res) => {
-    try {
-      // Initialize class data from req.body
-      const classData = { ...req.body };
-  
-      let materialsUrls = [];
-  
-      // Handle multiple file uploads for materials
-      if (req.files?.materials) {
-        materialsUrls = await uploadFileToFirebase(req.files.materials);
-        classData.materials = materialsUrls; // Add file URLs to class data
-      }
-  
-      // Create a new class instance
+  try {
+      // console.log("Received files:", req.files); // Debugging
+
+      // if (!req.files || req.files.length === 0) {
+      //     return res.status(400).json({ message: "No materials uploaded!" });
+      // }
+
+      // Ensure materialsUrls is an array of strings
+      let materialsUrls = await Promise.all(req.files.map(file => uploadFileToFirebase(file)));
+
+      // Flatten the array if needed
+      materialsUrls = materialsUrls.flat(); 
+
+      // console.log("Uploaded File URLs:", materialsUrls); // Debugging
+
+      // Create class object
+      const classData = {
+          classTitle: req.body.classTitle,
+          instructor: req.body.instructor,
+          batch: req.body.batch,
+          courseCategory: req.body.courseCategory,
+          course: req.body.course,
+          description: req.body.description,
+          materials: materialsUrls,   
+          fromDate: req.body.fromDate,
+          toDate: req.body.toDate,
+          schedule: req.body.schedule,
+          liveLink: req.body.liveLink,
+          videoLink: req.body.videoLink,
+          status: "Scheduled",
+          liveClassStatus: req.body.liveClassStatus || "true",
+      };
+
+      // Save class to DB
       const newClass = new Class(classData);
-  
-      // Save the class in the database
       const savedClass = await newClass.save();
-  
+
       res.status(200).json({ message: "Class created successfully", class: savedClass });
-    } catch (error) {
+  } catch (error) {
+      console.error("Error creating class:", error);
       res.status(500).json({ message: `Error creating class: ${error.message}` });
-    }
-  };
-  
+  }
+};
+
+
+
+
 
  
   

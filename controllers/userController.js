@@ -8,6 +8,7 @@ const sendOTPEmail = require("../utils/mailSent");
 const dotenv = require("dotenv");
 dotenv.config();
 const jwt = require("jsonwebtoken");
+ 
 
 // Generate OTP
 function generateOtp() {
@@ -21,35 +22,53 @@ function generateOtp() {
 
 
 const login = async (req, res) => {
-  const { email, password } = req.body;
-
-  if (!email || !password) {
-    return res.status(400).json('Please provide email and password!.');
-  }
-
   try {
-    // Find user by email (case-insensitive)
-    const user = await User.findOne({ email: email.toLowerCase() });
+    const { email, password } = req.body;
 
-    if (!user) {
-      return res.status(400).json('Invalid login credentials!');
+    if (!email || !password) {
+      return res.status(400).json({ message: "Please provide email and password!." });
     }
 
+    // Find user by email (case-insensitive) and populate roles
+    const user = await User.findOne({ email: email.toLowerCase() }).populate("roles");
+
+    if (!user) {
+      return res.status(400).json({ message: "Invalid login credentials!" });
+    }
 
     // Check if the password matches
     const isPasswordMatch = await bcryptjs.compare(password, user.password);
-
     if (!isPasswordMatch) {
-      return res.status(400).json('Invalid login credentials!');
+      return res.status(400).json({ message: "Invalid login credentials!" });
     }
+
+    // Extract user roles correctly
+    let userRoles = [];
+    let userPermissions = [];
+
+    if (typeof user.roles === "string") {
+      userRoles = [user.roles]; // Case 1: Single role string
+    } else if (Array.isArray(user.roles)) {
+      userRoles = user.roles.map(role => role.roles || role); // Case 2: Multiple roles
+      userPermissions = user.roles.flatMap(role => role.permissions || []); // Collect permissions from all roles
+    } else if (user.roles && typeof user.roles === "object") {
+      userRoles = [user.roles.roles]; // Case 3: Nested object
+      userPermissions = user.roles.permissions || []; // Extract permissions
+    }
+
+    console.log("🔍 Extracted User Data:");
+    console.log("Roles:", userRoles);
+    console.log("Permissions:", userPermissions);
 
     // Generate JWT token with essential user data
     const token = jwt.sign(
       { 
-        _id: user._id, // Include only essential user information in the token
-        roles: user.roles,
+        _id: user._id, 
+        roles: userRoles,
         email: user.email,
-        name: user.name,
+        first_name: user.first_name,
+        last_name: user.last_name,
+        permissions: userPermissions, // ✅ Now permissions are included
         image: user.image,
       },
       process.env.SECRET_KEY,
@@ -61,17 +80,22 @@ const login = async (req, res) => {
       token,
       user: {
         _id: user._id,
-        name: user.name,
+        first_name: user.first_name,
+        last_name: user.last_name,
         email: user.email,
-        roles: user.roles,
+        roles: userRoles,
+        permissions: userPermissions, // ✅ Now permissions are included in the response
         image: user.image,
       },
     });
   } catch (err) {
     console.error('Internal server error:', err.message);
-    return res.status(500).json("Internal server error:", err.message);
+    return res.status(500).json({ message: "Internal server error", error: err.message });
   }
 };
+
+ 
+
 
 
 //////////////////////////////////////////////////////////// reset password all process ////////////////////////////////////////////////////////////////////
@@ -223,38 +247,44 @@ const userPost = async (req, res) => {
 
 const getAllUser = async (req, res) => {
   try {
-    const { roles, _id } = req.user;
-    const { page  , limit  } = req.query;
+    const { roles, id } = req.user; // Use `id` instead of `_id`
+    const { page, limit } = req.query;
 
-    // Fetch the ObjectId of the "Student" role
-    const studentRole = await Role.findOne({ roles: "Students" }).lean();
-    if (!studentRole) {
-      return res.status(404).json({ message: "Students role not found" });
+    if (!id) {
+      return res.status(400).json({ message: "User ID not found. Please log in again." });
     }
 
-    let query = { roles: { $ne: studentRole._id } }; // Exclude students
+    let query = {};
 
-    if (roles === "Admin") {
-      query = { roles: { $ne: studentRole._id } }; // Admin can see all except students
-    } else if (["HR", "Instructor", "Manager"].includes(roles)) {
-      query = { _id, roles: { $ne: studentRole._id } }; // Restrict to self but exclude students
+    if (roles.includes("Admin")) {
+      query = {}; // Admin can see all users
+    } else if (roles.some((role) => ["HR", "Instructor", "Manager"].includes(role))) {
+      query = { _id: id }; // Only show the logged-in user
     } else {
-      return res
-        .status(403)
-        .json({ message: "Access denied: Insufficient permissions." });
+      return res.status(403).json({ message: "Access denied: Insufficient permissions." });
     }
 
-    const skip = (parseInt(page) - 1) * parseInt(limit || 0);
+    // Debugging Logs
+    console.log("🔍 Debugging Query:", query);
+    console.log("📌 User Roles:", roles);
+    console.log("📌 Logged-in User ID:", id);
+    console.log("📌 Page:", page, "Limit:", limit);
+
+    const pageNum = parseInt(page) || 1;
+    const perPage = parseInt(limit) || 10;
+    const skip = (pageNum - 1) * perPage;
 
     const users = await User.find(query)
       .populate("roles")
       .sort({ _id: -1 })
       .skip(skip)
-      .limit(parseInt(limit))
+      .limit(perPage)
       .lean();
 
+    console.log("📌 Fetched Users:", users.length);
+
     const totalUsers = await User.countDocuments(query);
-    const totalPages = limit ? Math.ceil(totalUsers / parseInt(limit)) : 1;
+    const totalPages = Math.ceil(totalUsers / perPage);
 
     return res.status(200).json({
       message: "Users fetched successfully!",
@@ -263,8 +293,8 @@ const getAllUser = async (req, res) => {
       pagination: {
         totalUsers,
         totalPages,
-        currentPage: parseInt(page),
-        perPage: limit ? parseInt(limit) : totalUsers,
+        currentPage: pageNum,
+        perPage: perPage,
       },
     });
   } catch (error) {
@@ -272,6 +302,9 @@ const getAllUser = async (req, res) => {
     return res.status(500).json({ message: `Internal server error: ${error.message}` });
   }
 };
+
+
+
 
 
 
@@ -307,35 +340,35 @@ const getUser = async (req, res) => {
 
 //////////////////////////////////////////////////////////// update user ////////////////////////////////////////////////////////////////////
 
-
 const updatedUser = async (req, res) => {
   try {
     const { _id, newPassword, ...updateFields } = req.body;
 
     // Validate user ID
     if (!_id) {
-      return res.status(400).json({ message: 'User ID is required for updating.' });
+      return res.status(400).json({ message: "User ID is required for updating." });
     }
 
-    let fileUrls = [];
-    let imgUrl = "";
+    let newFileUrls = [];
+    let newImgUrl = "";
 
-    // Handle multiple file uploads
-    if (req.files?.files) {
-      fileUrls = await uploadFileToFirebase(req.files.files);
-      updateFields.files = fileUrls; // Add file URLs to update fields
-    }
-
-    // Handle single image upload
-    if (req.files?.image) {
-      const uploadedImages = await uploadFileToFirebase(req.files.image);
-      imgUrl = uploadedImages[0];
-      updateFields.image = imgUrl; // Add image URL to update fields
-    }
-
+    // Find existing user first
     const existingUser = await User.findById(_id);
     if (!existingUser) {
-      return res.status(404).json({ message: 'User not found.' });
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    // Handle multiple file uploads (Append instead of replace)
+    if (req.files?.files) {
+      newFileUrls = await uploadFileToFirebase(req.files.files);
+      updateFields.$push = { files: { $each: newFileUrls } }; // Append files instead of replacing
+    }
+
+    // Handle single image upload (replace only if a new image is uploaded)
+    if (req.files?.image) {
+      const uploadedImages = await uploadFileToFirebase(req.files.image);
+      newImgUrl = uploadedImages[0];
+      updateFields.image = newImgUrl; // Replace with new image
     }
 
     // Hash new password if provided
@@ -343,15 +376,18 @@ const updatedUser = async (req, res) => {
       updateFields.password = await bcryptjs.hash(newPassword, 10);
     }
 
-    // Update user in the database
+    // Update user in the database with `$set` and `$push`
     const updatedUser = await User.findByIdAndUpdate(
       _id,
-      { ...updateFields }, // Apply all updates
+      {
+        $set: updateFields, // Update only changed fields
+        ...(updateFields.$push ? { $push: updateFields.$push } : {}), // Append new files without replacing old ones
+      },
       { new: true } // Return the updated document
-    ).populate('roles');
+    ).populate("roles");
 
     if (!updatedUser) {
-      return res.status(500).json({ message: 'Error updating user data.' });
+      return res.status(500).json({ message: "Error updating user data." });
     }
 
     return res.status(200).json({
@@ -359,7 +395,7 @@ const updatedUser = async (req, res) => {
       updatedUser,
     });
   } catch (error) {
-    console.error('Error updating user:', error);
+    console.error("Error updating user:", error);
     return res.status(500).json({ message: `Internal server error: ${error.message}` });
   }
 };

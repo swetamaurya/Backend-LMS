@@ -10,7 +10,7 @@ const router = express.Router();
 
  router.post("/login", loginAdmin);
 
- router.get("/getAll", auth(["Admin"]), getAllAdmins);
+ router.get("/getAll", auth(["Admin"]), getAllAdmins); 
 
  router.get("/get", auth(["Admin"]), getAdmin);
 

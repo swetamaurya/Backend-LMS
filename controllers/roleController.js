@@ -4,7 +4,7 @@ const mongoose = require("mongoose");
  
 const createRole = async (req, res) => {
   try {
-    const { roles, permission, name } = req.body; // 'name' represents employee ID
+    const { roles, permissions, name } = req.body; // 'name' represents employee ID
 
     // Condition 1: If role is not selected, return an error
     if (!roles) {
@@ -32,7 +32,7 @@ const createRole = async (req, res) => {
     if (existingRole) {
       const newRole = new Role({
         roles,
-        permission,
+        permissions,
         name,
       });
       const savedRole = await newRole.save();
@@ -48,7 +48,7 @@ const createRole = async (req, res) => {
     if (existingEmployee) {
       const newRole = new Role({
         roles,
-        permission,
+        permissions,
         name,
       });
       const savedRole = await newRole.save();
@@ -61,7 +61,7 @@ const createRole = async (req, res) => {
     // Condition 6: If role & name are unique, save new role
     const newRole = new Role({
       roles,
-      permission,
+      permissions,
       name,
     });
 

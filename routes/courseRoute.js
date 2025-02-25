@@ -7,7 +7,7 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 router.post(
   "/post",
-  auth(["Admin", "Instructor"]),
+  auth(["Admin", "Instructor","Manager","HR"]),
   upload.fields([{ name: "thumbnail", maxCount: 1 },
     { name: "gallery", maxCount: 10 },
     { name: "materials", maxCount: 10 }
@@ -17,10 +17,10 @@ router.post(
 
  
 
-router.get("/getAll", auth(["Admin","Instructor"]), getAllCourses);
-router.get("/get", auth(["Admin","Instructor"]), getCourse);
+router.get("/getAll", auth(["Admin","Instructor","Manager","HR"]), getAllCourses);
+router.get("/get", auth(["Admin","Instructor","Manager","HR"]), getCourse);
 router.post("/update",
-    auth(["Admin", "Instructor"]),
+    auth(["Admin", "Instructor","Manager","HR"]),
     upload.fields([{ name: "thumbnail", maxCount: 1 },
       { name: "gallery", maxCount: 10 },
       { name: "materials", maxCount: 10 }

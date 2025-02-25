@@ -8,7 +8,7 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 router.post(
   "/post",
-  auth(["Admin", "Instructor"]),
+  auth(["Admin", "Instructor","Manager","HR"]),
   upload.fields([{ name: "signature_path", maxCount: 1 },
     { name: "photo_path", maxCount: 1 },
   ]),
@@ -17,19 +17,19 @@ router.post(
 
  
 
-router.get("/getAll", auth(["Admin","Instructor"]),getAllStudents);
-router.get("/get", auth(["Admin","Instructor"]), getStudent);
+router.get("/getAll", auth(["Admin","Instructor","Manager","HR"]),getAllStudents);
+router.get("/get", auth(["Admin","Instructor","Students","Manager","HR"]), getStudent);
 router.post("/login",   loginStudent);
 
 router.post(
     "/update",
-    auth(["Admin", "Instructor"]),
+    auth(["Admin", "Instructor","Manager","HR"]),
     upload.fields([{ name: "signature_path", maxCount: 1 },
       { name: "photo_path", maxCount: 1 },
     ]),
     updateStudent
   );
 
-router.get("/studentDataUpdate", auth(["Admin", "Instructor"]),studentDataUpdate);
+router.get("/studentDataUpdate", auth(["Admin", "Instructor","Manager","HR"]),studentDataUpdate);
 
 module.exports = router;

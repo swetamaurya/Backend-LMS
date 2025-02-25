@@ -1,6 +1,6 @@
 const express = require("express");
 const multer = require("multer");
-const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({ storage: multer.memoryStorage() }); // Adjust storage as needed
 const { createClass,
     getAllClasses,
     getSingleClass,
@@ -8,9 +8,9 @@ const { createClass,
 const { auth } = require("../middleware/authorization");
 const router = express.Router();
 
-router.post("/post",upload.array('materials'), auth(["Admin","Instructor","Students"]),createClass);
-router.get("/getAll", auth(["Admin","Instructor","Students"]), getAllClasses);
-router.get("/get", auth(["Admin","Instructor","Students"]),getSingleClass);
-router.post("/update", upload.array('materials'), auth(["Admin","Instructor","Students"]), updateClass);
+router.post("/post", auth(["Admin", "Instructor", "Students", "Manager", "HR"]), upload.array("materials"), createClass);
+router.get("/getAll", auth(["Admin","Instructor","Students","Manager","HR"]), getAllClasses);
+router.get("/get", auth(["Admin","Instructor","Students","Manager","HR"]),getSingleClass);
+router.post("/update", auth(["Admin","Instructor","Students","Manager","HR"]), upload.array('materials'), updateClass);
 
 module.exports = router;

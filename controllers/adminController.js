@@ -3,7 +3,7 @@ const Role  = require("../models/roleModel");
 const { uploadFileToFirebase , bucket} = require('../utils/fireBase');
 
 // const { uploadFileToFirebase , bucket} = require('../utils/fireBase');
-const bcryptjs = require("bcryptjs")
+const bcryptjs = require("bcryptjs");
 const sendOTPEmail = require("../utils/mailSent");
 const dotenv = require("dotenv");
 dotenv.config();
@@ -16,65 +16,66 @@ function generateOtp() {
   
 // ======================================================================================================================
 // ====================================================================================================================== 
- // Admin Sign-Up
- const signUp = async (req, res) => {
-    const { email, name, phone, password } = req.body;
+const signUp = async (req, res) => {
+    const { email, name, mobile, password } = req.body;
+
+    // Check if password exists
+    if (!password) {
+        return res.status(400).json({ error: "Password is required!" });
+    }
+
     const roles = "Admin";
-  const permissions = 
-        ["Dashboard Management",
+    const permissions = [
+        "Dashboard Management",
         "Employee Management",
         "Course Management",
         "Class Management",
         "Student Management",
         "Messages",
         "System Management",
-        "All Management"]
-      
-    const hashedPassword = await bcryptjs.hash(password, 10);
-  
+        "All Management",
+    ];
+
     try {
-      const admin = await Admin.findOne({ email: email.toLowerCase() });
-      if (admin) {
-        return res.status(400).json({ error: "Email ID already exists!" });
-      }
-  
-      // Check if Admin role exists
-      let adminRole = await Role.findOne({ roles });
-      if (!adminRole) {
-        adminRole = new Role({
-          roles,
-          permissions: [
-            "Dashboard Management",
-            "Employee Management",
-            "Course Management",
-            "Class Management",
-            "Student Management",
-            "Messages",
-            "System Management",
-            "All Management",
-          ],
+        // Hash password only if it's defined
+        const hashedPassword = await bcryptjs.hash(password, 10);
+
+        // Check if admin already exists
+        const admin = await Admin.findOne({ email: email.toLowerCase() });
+        if (admin) {
+            return res.status(400).json({ error: "Email ID already exists!" });
+        }
+
+        // Check if Admin role exists
+        let adminRole = await Role.findOne({ roles });
+        if (!adminRole) {
+            adminRole = new Role({
+                roles,
+                permissions,
+            });
+            await adminRole.save();
+        }
+
+        // Create new admin user
+        const newadmin = new Admin({
+            name,
+            email: email.toLowerCase(),
+            mobile,
+            roles,
+            password: hashedPassword,
+            permissions,
         });
-        await adminRole.save();
-      }
-  
-      // Create Admin admin
-      const newadmin = new Admin({
-        name,
-        email: email.toLowerCase(),
-        phone,
-        roles ,
-        password: hashedPassword,
-        permissions
-      })
-  
-      console.log("newadmin",newadmin)
-      await newadmin.save();
-      return res.status(200).json({ message: "Admin Created Successfully!", newadmin });
+
+        // console.log("New Admin Created:", newadmin);
+        await newadmin.save();
+
+        return res.status(200).json({ message: "Admin Created Successfully!", newadmin });
     } catch (error) {
-      console.error("Error creating Admin:", error.message);
-      return res.status(500).json({ message: `Internal server error: ${error.message}` });
+        console.error("Error creating Admin:", error.message);
+        return res.status(500).json({ message: `Internal server error: ${error.message}` });
     }
-  };
+};
+
 
 
 // ======================================================================================================================
@@ -85,7 +86,7 @@ const loginAdmin = async (req, res) => {
 
   try {
     const admin = await Admin.findOne({ email: email.toLowerCase() }).populate("roles");
-    console.log("casdcasd",admin)
+    // console.log("casdcasd",admin)
 
     if (!admin) {
       return res.status(400).json({ message: "Invalid credentials!" });

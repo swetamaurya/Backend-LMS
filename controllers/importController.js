@@ -25,25 +25,37 @@ const importFromExcel = async (req, res) => {
     const userRows = [];
     const headers = [];
 
+    // Extract headers
     worksheet.getRow(1).eachCell((cell, colNumber) => {
       headers[colNumber] = cell.value ? cell.value.toString().trim() : null;
     });
 
+    // Process each row
     worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
       if (rowNumber > 1) {
         const userData = {};
+        
         row.eachCell((cell, colNumber) => {
           const header = headers[colNumber];
           if (!header) return;
 
           const key = header.toLowerCase().replace(/\s+/g, "_");
 
-           userData[key] = typeof cell.value === 'object' && cell.value.richText
-            ? cell.value.richText.map(rt => rt.text).join(' ') // Extract plain text
-            : cell.value;
+          // Extracting proper text from the cell value
+          if (typeof cell.value === "object") {
+            if (cell.value.richText) {
+              userData[key] = cell.value.richText.map(rt => rt.text).join(" ").trim();
+            } else if (cell.value.text) {
+              userData[key] = cell.value.text.trim();
+            } else if (cell.value.hyperlink) {
+              userData[key] = cell.value.hyperlink.trim();
+            }
+          } else {
+            userData[key] = cell.value ? cell.value.toString().trim() : "";
+          }
         });
 
-         userData["roles"] = "Students";
+        userData["roles"] = "Students";
 
         if (Object.keys(userData).length > 0) {
           userRows.push(userData);
@@ -55,6 +67,7 @@ const importFromExcel = async (req, res) => {
       return res.status(400).json({ message: "Uploaded Excel file has no valid data." });
     }
 
+    // Insert data into MongoDB
     const insertedUsers = await Student.insertMany(userRows);
 
     res.status(200).json({
